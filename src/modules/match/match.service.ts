@@ -85,9 +85,14 @@ export class MatchService {
     return updatedApplications;
   }
 
-  async getRankedApplications(jobId: string) {
+async getRankedApplications(jobId: string) {
     return prisma.application.findMany({
-      where: { jobId },
+      where: { 
+        jobId,
+        student: {
+          isVisible: true 
+        }
+      },
       include: { student: true },
       orderBy: { score: "desc" },
     });
