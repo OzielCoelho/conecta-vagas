@@ -15,9 +15,13 @@ export class JobRepository {
     });
   }
 
-  async findAll() {
+  async findAll(filters?: { model?: any; course?: string }) {
     return prisma.job.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true, 
+        model: filters?.model,   
+        course: filters?.course, 
+      },
       include: { company: true },
     });
   }

@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { JobService } from "./job.service";
-import { CreateJobDTO, UpdateJobDTO } from "./job.dto";
+import { CreateJobDTO, UpdateJobDTO, updateJobSchema } from "./job.dto";
 import { CompanyService } from "../companies/company.service";
 
 const jobService = new JobService();
@@ -19,7 +19,9 @@ export class JobController {
   }
 
   async getAll(request: FastifyRequest, reply: FastifyReply) {
-    const jobs = await jobService.findAll();
+    const filters = request.query as { model?: any; course?: string };
+    
+    const jobs = await jobService.findAll(filters);
 
     return reply.send(jobs);
   }
@@ -34,7 +36,7 @@ export class JobController {
 
   async update(request: FastifyRequest, reply: FastifyReply) {
     const { id } = request.params as { id: string };
-    const data = request.body as UpdateJobDTO;
+   const data = updateJobSchema.parse(request.body);
 
     const job = await jobService.update(id, data);
 

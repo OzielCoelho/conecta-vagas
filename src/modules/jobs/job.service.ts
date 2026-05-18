@@ -19,8 +19,8 @@ export class JobService {
     return job;
   }
 
-  async findAll() {
-    return jobRepository.findAll();
+  async findAll(filters?: { model?: string; course?: string }) {
+    return jobRepository.findAll(filters);
   }
 
   async findByCompanyId(companyId: string) {
