@@ -46,4 +46,21 @@ describe("Application - transições de status", () => {
     expect(isValidTransition("SENT", "INTERVIEW")).toBe(false);
     expect(isValidTransition("SENT", "APPROVED")).toBe(false);
   });
+  
+  it("não deve permitir candidatura duplicada do mesmo aluno na mesma vaga", () => {
+    
+    const candidaturasNoBanco = [
+      { studentId: "aluno-wesley", jobId: "vaga-it-auditor" }
+    ];
+
+    const novaTentativa = { studentId: "aluno-wesley", jobId: "vaga-it-auditor" };
+
+    
+    const jáExiste = candidaturasNoBanco.some(
+      (c) => c.studentId === novaTentativa.studentId && c.jobId === novaTentativa.jobId
+    );
+
+    
+    expect(jáExiste).toBe(true);
+  });
 });

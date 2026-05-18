@@ -43,7 +43,7 @@ describe("MatchService - calculateScore", () => {
     expect(score).toBe(0);
   });
 
-  it("deve retornar 80 quando 2 de 3 habilidades batem e curso bate", () => {
+  it("deve retornar 65 quando 2 de 3 habilidades batem e curso bate", () => {
     const score = matchService.calculateScore(
       ["Node.js", "JavaScript"],
       "Técnico em Informática",
