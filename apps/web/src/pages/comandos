@@ -1,0 +1,4 @@
+npm install dotenv fastify @fastify/cors @fastify/jwt bcryptjs @prisma/adapter-pg @prisma/client
+  npm install -D prisma tsx typescript
+  npx prisma generate
+  npm run dev

@@ -1,0 +1,40 @@
+import { createBrowserRouter, Navigate } from "react-router-dom";
+import { AppShell } from "../layouts/AppShell";
+import { CompanyProfilePage } from "../pages/CompanyProfilePage";
+import { CompleteCompanyProfilePage } from "../pages/CompleteCompanyProfilePage";
+import { CompleteStudentProfilePage } from "../pages/CompleteStudentProfilePage";
+import { HomePage } from "../pages/HomePage";
+import { JobsPage } from "../pages/JobsPage";
+import { SettingsPage } from "../pages/SettingsPage";
+import { StudentProfilePage } from "../pages/StudentProfilePage";
+import { StudentsPage } from "../pages/StudentsPage";
+import { ProtectedRoute } from "../routes/ProtectedRoute";
+
+export const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <AppShell />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "vagas", element: <JobsPage /> },
+      { path: "alunos", element: <StudentsPage /> },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          { path: "perfil/aluno", element: <StudentProfilePage /> },
+          { path: "perfil/empresa", element: <CompanyProfilePage /> },
+          { path: "configuracoes", element: <SettingsPage /> },
+        ],
+      },
+    ],
+  },
+  {
+    element: <ProtectedRoute />,
+    children: [
+      { path: "/completar-perfil/aluno", element: <CompleteStudentProfilePage /> },
+      { path: "/completar-perfil/empresa", element: <CompleteCompanyProfilePage /> },
+    ],
+  },
+  { path: "/login", element: <Navigate to="/?auth=login" replace /> },
+  { path: "/cadastro", element: <Navigate to="/?auth=register" replace /> },
+]);
