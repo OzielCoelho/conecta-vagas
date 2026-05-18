@@ -3,11 +3,12 @@ import { useAuth } from "../auth/AuthProvider";
 import { Sidebar } from "../components/Sidebar";
 
 const pageTitles: Record<string, string> = {
-  "/": "Home",
+  "/": "Dashboard",
   "/vagas": "Vagas",
   "/alunos": "Alunos",
   "/perfil/aluno": "Meu perfil",
   "/perfil/empresa": "Meu perfil",
+  "/empresa/candidatos": "Candidatos",
   "/configuracoes": "Configurações",
 };
 
@@ -20,8 +21,8 @@ const roleLabels: Record<string, string> = {
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isDemo, startDemo } = useAuth();
-  const currentPage = pageTitles[location.pathname] ?? "Home";
+  const { user, isDemo } = useAuth();
+  const currentPage = pageTitles[location.pathname] ?? "Dashboard";
   const userLabel = user ? roleLabels[user.role] ?? user.role : "Visitante";
 
   function openAuthModal(type: "login" | "register") {
@@ -29,8 +30,8 @@ export function AppShell() {
   }
 
   return (
-    <div className="app-shell">
-      <Sidebar />
+    <div className={user ? "app-shell" : "app-shell app-shell--public"}>
+      {user ? <Sidebar /> : null}
       <div className="app-main">
         <header className="topbar">
           <div className="topbar__bar" aria-label="Navegação superior">
@@ -42,9 +43,9 @@ export function AppShell() {
               {user ? (
                 <div className="topbar__user-summary" aria-label="Usuário logado">
                   <div className="topbar__user-text">
-                    <span className="topbar__user-greeting">{isDemo ? "Modo demonstração" : "Bem-vindo"}</span>
-                    <strong>{userLabel}</strong>
-                    <span className="topbar__user-email">{user.email}</span>
+                    <span className="topbar__user-greeting">{isDemo ? "Modo demonstração" : `Bem-vindo(a), ${userLabel}`}</span>
+                    <strong>{user.email}</strong>
+                    <span className="topbar__user-email">Painel Conecta Jovem</span>
                   </div>
 
                   <span className="topbar__user-icon" aria-hidden="true">
@@ -55,18 +56,15 @@ export function AppShell() {
                 </div>
               ) : (
                 <div className="topbar__visitor-actions">
-                  <button className="secondary-button" type="button" onClick={() => openAuthModal("login")}>
-                    Entrar
-                  </button>
-                  <button className="secondary-button" type="button" onClick={() => {
-                    startDemo("student");
-                    navigate("/perfil/aluno");
-                  }}>
-                    Testar demo
-                  </button>
-                  <button className="primary-button" type="button" onClick={() => openAuthModal("register")}>
-                    Criar conta
-                  </button>
+                  <span className="topbar__visitor-welcome">Bem-vindo(a), Coordenação Conecta Jovem!</span>
+                  <div className="topbar__visitor-buttons">
+                    <button className="secondary-button" type="button" onClick={() => openAuthModal("login")}>
+                      Entrar
+                    </button>
+                    <button className="primary-button" type="button" onClick={() => openAuthModal("register")}>
+                      Criar conta
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

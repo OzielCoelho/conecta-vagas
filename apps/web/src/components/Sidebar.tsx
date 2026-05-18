@@ -1,17 +1,49 @@
+import { type ReactNode } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
-const menuItems = [
+type SidebarMenuItem = {
+  to: string;
+  label: string;
+  icon: ReactNode;
+  end?: boolean;
+};
+
+const dashboardItem: SidebarMenuItem = {
+  to: "/",
+  label: "Dashboard",
+  end: true,
+  icon: (
+    <svg viewBox="0 0 24 24" focusable="false">
+      <path d="M12 4.5 4 11v8.5h5.5v-5.5h5V19.5H20V11Z" fill="currentColor" />
+    </svg>
+  ),
+};
+
+const studentMenuItems: SidebarMenuItem[] = [
+  dashboardItem,
   {
-    to: "/",
-    label: "Home",
-    end: true,
+    to: "/vagas",
+    label: "Vagas",
     icon: (
       <svg viewBox="0 0 24 24" focusable="false">
-        <path d="M12 4.5 4 11v8.5h5.5v-5.5h5V19.5H20V11Z" fill="currentColor" />
+        <path d="M9 6V4.5h6V6h4A1.5 1.5 0 0 1 20.5 7.5v10A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 5 6Zm1.5 0h3V6h-3Zm-5 4v7.5H19V10Z" fill="currentColor" />
       </svg>
     ),
   },
+  {
+    to: "/configuracoes",
+    label: "Configurações",
+    icon: (
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="m19.4 13-.1.3 1.4 1.6-1.5 2.6-2-.4-.2.2-.4 2h-3l-.4-2-.3-.1-1.7 1-2.6-1.5.4-2-.2-.2-2-.4v-3l2-.4.1-.3-1-1.7L9.9 5l2 .4.2-.2.4-2h3l.4 2 .3.1 1.7-1L20.5 6l-.4 2 .2.2 2 .4V13ZM12 9a3 3 0 1 0 3 3 3 3 0 0 0-3-3Z" fill="currentColor" />
+      </svg>
+    ),
+  },
+];
+
+const companyMenuItems: SidebarMenuItem[] = [
+  dashboardItem,
   {
     to: "/vagas",
     label: "Vagas",
@@ -52,6 +84,21 @@ export function Sidebar() {
         ? { to: "/perfil/empresa", label: "Meu perfil" }
         : null;
 
+  const companyCandidatesItem =
+    user?.role === "COMPANY"
+      ? {
+          to: "/empresa/candidatos",
+          label: "Candidatos",
+          icon: (
+            <svg viewBox="0 0 24 24" focusable="false">
+              <path d="M12 5a3.5 3.5 0 1 1-3.5 3.5A3.5 3.5 0 0 1 12 5Zm-6 13c0-2.21 2.67-4 6-4s6 1.79 6 4v1H6Zm12.5-6.5A2.5 2.5 0 1 0 16 9a2.5 2.5 0 0 0 2.5 2.5ZM19 14c-1.06 0-2.04.21-2.87.57A5.33 5.33 0 0 1 20 19v1h2v-1c0-2.21-1.34-5-3-5Z" fill="currentColor" />
+            </svg>
+          ),
+        }
+      : null;
+
+  const menuItems = user?.role === "COMPANY" ? companyMenuItems : studentMenuItems;
+
   function handleLogout() {
     logout();
     navigate(isDemo ? "/" : "/?auth=login", { replace: true });
@@ -67,8 +114,8 @@ export function Sidebar() {
             <span className="sidebar__brand-core" />
           </span>
           <div>
-            <strong>Conecta Vagas</strong>
-            <p>Estudantes e empresas</p>
+            <strong>ConectaVagas</strong>
+            <p>Painel administrativo</p>
           </div>
         </div>
 
@@ -90,11 +137,24 @@ export function Sidebar() {
             </NavLink>
           ) : null}
 
+          {companyCandidatesItem ? (
+            <NavLink
+              key={companyCandidatesItem.to}
+              to={companyCandidatesItem.to}
+              className={({ isActive }) =>
+                isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
+              }
+            >
+              <span className="sidebar__link-icon" aria-hidden="true">{companyCandidatesItem.icon}</span>
+              <span>{companyCandidatesItem.label}</span>
+            </NavLink>
+          ) : null}
+
           {menuItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.end}
+              end={item.end ?? false}
               className={({ isActive }) =>
                 isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
               }
@@ -107,7 +167,7 @@ export function Sidebar() {
       </div>
 
       <div className="sidebar__footer sidebar__footer--stacked">
-        <p>{isDemo ? "Você está navegando com um perfil fictício editável." : "Conectando talentos a estágios com mais clareza."}</p>
+        <p>{isDemo ? "Você está navegando com um perfil fictício editável." : user?.role === "COMPANY" ? "Centralize vagas, alunos e candidaturas em um único painel." : "Acompanhe sua empregabilidade com vagas, perfil e candidaturas em um só lugar."}</p>
         {user ? (
           <button className="secondary-button" type="button" onClick={handleLogout}>
             {isDemo ? "Sair da demonstração" : "Sair"}

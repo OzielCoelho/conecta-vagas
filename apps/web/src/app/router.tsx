@@ -1,9 +1,10 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppShell } from "../layouts/AppShell";
 import { CompanyProfilePage } from "../pages/CompanyProfilePage";
+import { CompanyCandidatesPage } from "../pages/CompanyCandidatesPage";
 import { CompleteCompanyProfilePage } from "../pages/CompleteCompanyProfilePage";
 import { CompleteStudentProfilePage } from "../pages/CompleteStudentProfilePage";
-import { HomePage } from "../pages/HomePage";
+import { DashboardPage } from "../pages/DashboardPage";
 import { JobsPage } from "../pages/JobsPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { StudentProfilePage } from "../pages/StudentProfilePage";
@@ -15,7 +16,7 @@ export const router = createBrowserRouter([
     path: "/",
     element: <AppShell />,
     children: [
-      { index: true, element: <HomePage /> },
+      { index: true, element: <DashboardPage /> },
       { path: "vagas", element: <JobsPage /> },
       { path: "alunos", element: <StudentsPage /> },
       {
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "perfil/aluno", element: <StudentProfilePage /> },
           { path: "perfil/empresa", element: <CompanyProfilePage /> },
+          { path: "empresa/candidatos", element: <CompanyCandidatesPage /> },
           { path: "configuracoes", element: <SettingsPage /> },
         ],
       },
