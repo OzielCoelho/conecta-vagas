@@ -9,7 +9,7 @@ export class CompanyController {
     const data = request.body as Omit<CreateCompanyDTO, "userId">;
     const userId = request.user.id;
 
-    const company = await companyService.create({ ...data, userId });
+    const company = await companyService.create({ ...data, userId }, userId);
 
     return reply.status(201).send(company);
   }
@@ -26,7 +26,7 @@ export class CompanyController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateCompanyDTO;
 
-    const company = await companyService.update(id, data);
+    const company = await companyService.update(id, data, request.user.id);
 
     return reply.send(company);
   }

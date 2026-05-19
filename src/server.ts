@@ -7,6 +7,7 @@ import { studentRoutes } from "./modules/students/student.routes";
 import { jobRoutes } from "./modules/jobs/job.routes";
 import { companyRoutes } from "./modules/companies/company.routes";
 import { applicationRoutes } from "./modules/applications/application.routes";
+import { notificationRoutes } from "./modules/notifications/notification.routes";
 import { AppError } from "./shared/errors/app.error";
 
 const app = Fastify({ logger: true });
@@ -21,6 +22,7 @@ app.register(studentRoutes, { prefix: "/students" });
 app.register(jobRoutes, { prefix: "/jobs" });
 app.register(companyRoutes, { prefix: "/companies" });
 app.register(applicationRoutes, { prefix: "/applications" });
+app.register(notificationRoutes, { prefix: "/notifications" });
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {

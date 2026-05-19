@@ -1,6 +1,4 @@
 import { apiGet, apiPost, apiPut } from "./api";
-import { getStoredDemoStudentProfile, isDemoToken, saveDemoStudentProfile } from "../demo/demo-storage";
-import { demoStudentProfile } from "../demo/demo-profiles";
 
 export type StudentProfile = {
   id: string;
@@ -21,38 +19,17 @@ export type CreateStudentProfileInput = {
 };
 
 export function getMyStudentProfile(token: string) {
-  if (isDemoToken(token)) {
-    return Promise.resolve(getStoredDemoStudentProfile() as StudentProfile);
-  }
-
   return apiGet<StudentProfile>("/students/me", token);
 }
 
+export function getStudents(token: string) {
+  return apiGet<StudentProfile[]>("/students", token);
+}
+
 export function createStudentProfile(data: CreateStudentProfileInput, token: string) {
-  if (isDemoToken(token)) {
-    const profile = {
-      ...demoStudentProfile,
-      ...data,
-    } satisfies StudentProfile;
-
-    saveDemoStudentProfile(profile);
-    return Promise.resolve(profile);
-  }
-
   return apiPost<StudentProfile>("/students", data, token);
 }
 
 export function updateStudentProfile(id: string, data: CreateStudentProfileInput, token: string) {
-  if (isDemoToken(token)) {
-    const profile = {
-      ...(getStoredDemoStudentProfile() as StudentProfile),
-      id,
-      ...data,
-    } satisfies StudentProfile;
-
-    saveDemoStudentProfile(profile);
-    return Promise.resolve(profile);
-  }
-
   return apiPut<StudentProfile>(`/students/${id}`, data, token);
 }

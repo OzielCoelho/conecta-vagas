@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { StudentProfileForm, type StudentProfileFormValues } from "../components/profile/StudentProfileForm";
 import { getMyStudentProfile, updateStudentProfile } from "../services/students";
@@ -72,7 +73,7 @@ export function StudentProfilePage() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, [token]);
+  }, [token, user]);
 
   function saveLocalDetails() {
     if (!user) return;
@@ -117,32 +118,81 @@ export function StudentProfilePage() {
     }
 
     return (
-      <div className="profile-layout profile-layout--student">
+      <div className="profile-layout profile-layout--student profile-layout--refined">
         <div className="profile-main-stack">
-          <div className="panel profile-hero-card">
+          <section className="panel profile-hero-card profile-hero-card--refined">
             <div className="profile-hero-card__media">
               <div className="profile-avatar" aria-hidden="true">
-                <span>RA</span>
+                <span>
+                  {initialValues.name
+                    .split(" ")
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0]?.toUpperCase())
+                    .join("")}
+                </span>
               </div>
               <div className="profile-hero-card__info">
-                <span className="panel__label">Aluno</span>
+                <span className="panel__label">Candidato</span>
                 <h2 className="profile-hero-card__name">{initialValues.name}</h2>
                 <p className="profile-hero-card__title">{localDetails.title}</p>
                 <div className="profile-meta-chips">
-                  <span className="status-pill">Disponível para Estágio - {initialValues.availability}</span>
+                  <span className="status-pill">Disponível para estágio • {initialValues.availability}</span>
                   <span className="status-pill status-pill--highlight">Matching Score Geral: 96%</span>
                 </div>
               </div>
             </div>
 
+            <div className="profile-hero-card__meta-grid">
+              <article className="profile-info-card">
+                <span className="panel__label">Localidade</span>
+                <strong>{localDetails.city} • {localDetails.state}</strong>
+                <p>Disponibilidade alinhada para oportunidades locais e remotas.</p>
+              </article>
+              <article className="profile-info-card">
+                <span className="panel__label">Formação</span>
+                <strong>{localDetails.university}</strong>
+                <p>{localDetails.semester} • CR {localDetails.cr}</p>
+              </article>
+              <article className="profile-info-card">
+                <span className="panel__label">Objetivo</span>
+                <strong>Estágio com crescimento</strong>
+                <p>Perfil com foco em evolução técnica e experiência prática.</p>
+              </article>
+            </div>
+
             <div className="profile-hero-card__actions">
               <button className="secondary-button" type="button">Visualizar Currículo (PDF)</button>
               <button className="secondary-button" type="button">Editar Perfil</button>
-              <button className="primary-button" type="button">Ver Candidaturas</button>
+              <Link className="primary-button" to="/perfil/aluno/candidaturas">Ver Candidaturas</Link>
             </div>
-          </div>
+          </section>
 
-          <div className="panel profile-panel">
+          <section className="content-grid profile-insight-grid profile-insight-grid--refined">
+            <article className="panel profile-stat-card">
+              <span className="panel__label">Empregabilidade</span>
+              <strong>12 vagas</strong>
+              <p>Compatíveis com suas habilidades e curso.</p>
+            </article>
+            <article className="panel profile-stat-card">
+              <span className="panel__label">Candidaturas</span>
+              <strong>5 processos</strong>
+              <p>Acompanhamento ativo no seu painel.</p>
+            </article>
+            <article className="panel profile-stat-card">
+              <span className="panel__label">Curso</span>
+              <strong>{localDetails.semester}</strong>
+              <p>{initialValues.course}</p>
+            </article>
+          </section>
+
+          <section className="panel profile-panel profile-panel--refined">
+            <div className="profile-panel__heading">
+              <div>
+                <span className="panel__label">Edição do perfil</span>
+                <h2>Atualize seus dados profissionais</h2>
+              </div>
+            </div>
             {successMessage ? <p className="form-success">{successMessage}</p> : null}
             <StudentProfileForm
               initialValues={initialValues}
@@ -151,9 +201,9 @@ export function StudentProfilePage() {
               error={error}
               onSubmit={handleSubmit}
             />
-          </div>
+          </section>
 
-          <div className="content-grid profile-insight-grid">
+          <section className="content-grid profile-insight-grid profile-insight-grid--details profile-insight-grid--details-extended">
             <article className="panel profile-description-card">
               <span className="panel__label">Habilidades</span>
               <h2>Skills em destaque</h2>
@@ -167,20 +217,47 @@ export function StudentProfilePage() {
             <article className="panel profile-description-card">
               <span className="panel__label">Dados acadêmicos</span>
               <h2>Formação</h2>
-              <div className="profile-academic-grid">
+              <div className="profile-academic-grid profile-academic-grid--compact">
                 <div><strong>Curso</strong><p>{initialValues.course}</p></div>
                 <div><strong>Semestre</strong><p>{localDetails.semester}</p></div>
                 <div><strong>Instituição</strong><p>{localDetails.university}</p></div>
                 <div><strong>CR</strong><p>{localDetails.cr}</p></div>
               </div>
             </article>
-          </div>
+
+            <article className="panel profile-description-card profile-link-card">
+              <span className="panel__label">Portfólio</span>
+              <h2>Link profissional</h2>
+              <p>{initialValues.portfolio ? "Mantenha seu material atualizado para aumentar a confiança das empresas." : "Adicione um portfólio para tornar seu perfil ainda mais completo."}</p>
+              <span className="profile-link-card__value">{initialValues.portfolio || "Nenhum link informado ainda"}</span>
+            </article>
+          </section>
         </div>
 
-        <div className="profile-side-stack">
+        <div className="profile-side-stack profile-side-stack--refined">
+          <aside className="panel profile-description-card profile-description-card--summary">
+            <span className="panel__label">Apresentação</span>
+            <h2>Resumo profissional</h2>
+            <p>{localDetails.summary}</p>
+            <div className="profile-summary-list">
+              <div className="profile-summary-list__item">
+                <span>Idade</span>
+                <strong>{localDetails.age} anos</strong>
+              </div>
+              <div className="profile-summary-list__item">
+                <span>Localidade</span>
+                <strong>{localDetails.city} • {localDetails.state}</strong>
+              </div>
+              <div className="profile-summary-list__item">
+                <span>Instituição</span>
+                <strong>{localDetails.university}</strong>
+              </div>
+            </div>
+          </aside>
+
           <aside className="panel profile-description-card">
             <span className="panel__label">Informações básicas</span>
-            <div className="profile-basic-grid">
+            <div className="profile-basic-grid profile-basic-grid--refined">
               <label className="field">
                 <span>Idade</span>
                 <input
@@ -231,22 +308,6 @@ export function StudentProfilePage() {
                 />
               </label>
             </div>
-          </aside>
-
-          <aside className="panel profile-description-card">
-            <span className="panel__label">Descrição</span>
-            <h2>Apresentação do candidato</h2>
-            <p>
-              Espaço pensado para o candidato escrever uma breve descrição sobre suas qualidades, objetivos,
-              pontos fortes e o que busca no estágio.
-            </p>
-            <textarea
-              className="profile-description-card__textarea"
-              rows={8}
-              value={localDetails.summary}
-              onChange={(event) => setLocalDetails((current) => ({ ...current, summary: event.target.value }))}
-              placeholder="Ex.: Sou uma estudante dedicada, com interesse em desenvolvimento web, boa comunicação e vontade de aprender em ambientes colaborativos..."
-            />
             {localSavedMessage ? <p className="form-success">{localSavedMessage}</p> : null}
             <button className="secondary-button" type="button" onClick={saveLocalDetails}>
               Salvar informações extras
@@ -255,15 +316,15 @@ export function StudentProfilePage() {
         </div>
       </div>
     );
-  }, [error, handleSubmit, initialValues, isLoading, isSubmitting, localDetails, localSavedMessage, successMessage]);
+  }, [error, initialValues, isLoading, isSubmitting, localDetails, localSavedMessage, successMessage]);
 
   return (
-    <section className="page-section profile-page">
-      <header className="page-header">
+    <section className="page-section profile-page student-profile-page student-profile-page--refined">
+      <header className="page-header student-profile-page__header">
         <div>
           <span className="page-eyebrow">Meu perfil</span>
-          <h1>Perfil do aluno</h1>
-          <p>Mantenha seu curso, habilidades, disponibilidade e portfólio atualizados.</p>
+          <h1>Perfil do candidato</h1>
+          <p>Mantenha seu curso, habilidades, disponibilidade e portfólio organizados para aumentar a aderência nas vagas.</p>
         </div>
       </header>
 

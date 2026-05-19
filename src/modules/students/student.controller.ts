@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { StudentService } from "./student.service";
 import { CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
+import { StudentService } from "./student.service";
 
 const studentService = new StudentService();
 
@@ -9,7 +9,7 @@ export class StudentController {
     const data = request.body as Omit<CreateStudentDTO, "userId">;
     const userId = request.user.id;
 
-    const student = await studentService.create({ ...data, userId });
+    const student = await studentService.create({ ...data, userId }, userId);
 
     return reply.status(201).send(student);
   }
@@ -32,7 +32,7 @@ export class StudentController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateStudentDTO;
 
-    const student = await studentService.update(id, data);
+    const student = await studentService.update(id, data, request.user.id);
 
     return reply.send(student);
   }

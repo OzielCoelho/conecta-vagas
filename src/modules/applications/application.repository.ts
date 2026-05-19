@@ -34,6 +34,14 @@ export class ApplicationRepository {
   async findById(id: string) {
     return prisma.application.findUnique({
       where: { id },
+      include: {
+        student: true,
+        job: {
+          include: {
+            company: true,
+          },
+        },
+      },
     });
   }
 

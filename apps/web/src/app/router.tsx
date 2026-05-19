@@ -7,6 +7,7 @@ import { CompleteStudentProfilePage } from "../pages/CompleteStudentProfilePage"
 import { DashboardPage } from "../pages/DashboardPage";
 import { JobsPage } from "../pages/JobsPage";
 import { SettingsPage } from "../pages/SettingsPage";
+import { StudentApplicationsPage } from "../pages/StudentApplicationsPage";
 import { StudentProfilePage } from "../pages/StudentProfilePage";
 import { StudentsPage } from "../pages/StudentsPage";
 import { ProtectedRoute } from "../routes/ProtectedRoute";
@@ -23,6 +24,7 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
           { path: "perfil/aluno", element: <StudentProfilePage /> },
+          { path: "perfil/aluno/candidaturas", element: <StudentApplicationsPage /> },
           { path: "perfil/empresa", element: <CompanyProfilePage /> },
           { path: "empresa/candidatos", element: <CompanyCandidatesPage /> },
           { path: "configuracoes", element: <SettingsPage /> },

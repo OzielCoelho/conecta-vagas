@@ -63,42 +63,46 @@ export function StudentProfileForm({
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <label className="field">
-        <span>Nome</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} required />
-      </label>
+    <form className="auth-form profile-form profile-form--student" onSubmit={handleSubmit}>
+      <div className="profile-form__grid">
+        <label className="field">
+          <span>Nome</span>
+          <input value={name} onChange={(event) => setName(event.target.value)} required />
+        </label>
 
-      <label className="field">
-        <span>Curso</span>
-        <input value={course} onChange={(event) => setCourse(event.target.value)} required />
-      </label>
+        <label className="field">
+          <span>Curso</span>
+          <input value={course} onChange={(event) => setCourse(event.target.value)} required />
+        </label>
 
-      <label className="field">
-        <span>Habilidades</span>
-        <input
-          value={skills}
-          onChange={(event) => setSkills(event.target.value)}
-          placeholder="React, Node, SQL"
-          required
-        />
-      </label>
+        <label className="field">
+          <span>Habilidades</span>
+          <input
+            value={skills}
+            onChange={(event) => setSkills(event.target.value)}
+            placeholder="React, Node, SQL"
+            required
+          />
+        </label>
 
-      <label className="field">
-        <span>Disponibilidade</span>
-        <input value={availability} onChange={(event) => setAvailability(event.target.value)} required />
-      </label>
+        <label className="field">
+          <span>Disponibilidade</span>
+          <input value={availability} onChange={(event) => setAvailability(event.target.value)} required />
+        </label>
+      </div>
 
-      <label className="field">
+      <label className="field profile-form__field--full">
         <span>Portfólio / link</span>
-        <input value={portfolio} onChange={(event) => setPortfolio(event.target.value)} />
+        <input value={portfolio} onChange={(event) => setPortfolio(event.target.value)} placeholder="https://seu-portfolio.com" />
       </label>
 
       {error ? <p className="form-error">{error}</p> : null}
 
-      <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Salvando..." : submitLabel}
-      </button>
+      <div className="profile-form__actions">
+        <button className="primary-button" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando..." : submitLabel}
+        </button>
+      </div>
     </form>
   );
 }

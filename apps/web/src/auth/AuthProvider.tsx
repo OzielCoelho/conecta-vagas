@@ -1,10 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ApiError } from "../services/api";
-import { loadDemoMode, startDemoSession, clearDemoSession, isDemoToken } from "../demo/demo-storage";
-import { demoCompanyUser, demoStudentUser } from "../demo/demo-profiles";
 import { loginUser, registerUser, type LoginInput, type RegisterInput } from "../services/auth";
-import { getMyStudentProfile } from "../services/students";
 import { getMyCompanyProfile } from "../services/companies";
+import { getMyStudentProfile } from "../services/students";
 import { clearSession, loadSession, saveSession, type AuthUser } from "./auth-storage";
 
 type ProfileStatus = "unknown" | "complete" | "incomplete";
@@ -58,29 +56,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("unknown");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
-  const [isDemo, setIsDemo] = useState(false);
 
   useEffect(() => {
     const session = loadSession();
-    const demoMode = loadDemoMode();
 
     if (!session) {
       setIsBootstrapping(false);
       return;
     }
 
-    if (isDemoToken(session.token) && demoMode) {
-      setToken(session.token);
-      setUser(demoMode === "company" ? demoCompanyUser : demoStudentUser);
-      setIsDemo(true);
-      setProfileStatus("complete");
-      setIsBootstrapping(false);
-      return;
-    }
-
     setToken(session.token);
     setUser(session.user);
-    setIsDemo(false);
 
     fetchProfileStatus(session.token, session.user)
       .then((status) => {
@@ -103,11 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return "unknown";
     }
 
-    if (isDemoToken(token)) {
-      setProfileStatus("complete");
-      return "complete";
-    }
-
     const status = await fetchProfileStatus(token, user);
     setProfileStatus(status);
     return status;
@@ -118,7 +99,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveSession(session);
     setToken(session.token);
     setUser(session.user);
-    setIsDemo(false);
     const status = await fetchProfileStatus(session.token, session.user);
     setProfileStatus(status);
 
@@ -133,25 +113,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return login({ email: data.email, password: data.password });
   }
 
-  function startDemo(mode: "student" | "company" = "student") {
-    startDemoSession(mode);
-    const demoUser = mode === "company" ? demoCompanyUser : demoStudentUser;
-    setToken("demo-token");
-    setUser(demoUser);
-    setIsDemo(true);
-    setProfileStatus("complete");
+  function startDemo() {
+    clearSession();
+    setToken(null);
+    setUser(null);
+    setProfileStatus("unknown");
   }
 
   function logout() {
-    if (isDemo) {
-      clearDemoSession();
-    } else {
-      clearSession();
-    }
-
+    clearSession();
     setToken(null);
     setUser(null);
-    setIsDemo(false);
     setProfileStatus("unknown");
   }
 
@@ -165,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isAuthenticated: Boolean(token && user),
       isBootstrapping,
-      isDemo,
+      isDemo: false,
       profileStatus,
       login,
       register,
@@ -174,7 +146,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshProfileStatus,
       markProfileComplete,
     }),
-    [token, user, isBootstrapping, isDemo, profileStatus]
+    [token, user, isBootstrapping, profileStatus]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { JobService } from "./job.service";
-import { CreateJobDTO, UpdateJobDTO } from "./job.dto";
 import { CompanyService } from "../companies/company.service";
+import { CreateJobDTO, UpdateJobDTO } from "./job.dto";
+import { JobService } from "./job.service";
 
 const jobService = new JobService();
 const companyService = new CompanyService();
@@ -13,7 +13,7 @@ export class JobController {
 
     const company = await companyService.findByUserId(userId);
 
-    const job = await jobService.create({ ...data, companyId: company.id });
+    const job = await jobService.create({ ...data, companyId: company.id }, userId);
 
     return reply.status(201).send(job);
   }
@@ -36,7 +36,7 @@ export class JobController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateJobDTO;
 
-    const job = await jobService.update(id, data);
+    const job = await jobService.update(id, data, request.user.id);
 
     return reply.send(job);
   }
