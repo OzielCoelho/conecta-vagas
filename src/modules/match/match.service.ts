@@ -27,6 +27,35 @@ export class MatchService {
     return Math.round(score);
   }
 
+  buildJustification(
+    studentSkills: string[],
+    studentCourse: string,
+    studentAvailability: string,
+    jobSkills: string[],
+    jobCourse: string | null,
+    jobAvailability: string | null
+  ): string[] {
+    const matchedSkills = studentSkills.filter((skill) =>
+      jobSkills.map((item) => item.toLowerCase()).includes(skill.toLowerCase())
+    );
+
+    const reasons: string[] = [];
+
+    if (matchedSkills.length > 0) {
+      reasons.push(`${matchedSkills.length} skill(s) em comum`);
+    }
+
+    if (jobCourse && studentCourse.toLowerCase() === jobCourse.toLowerCase()) {
+      reasons.push("curso alinhado");
+    }
+
+    if (jobAvailability && studentAvailability.toLowerCase() === jobAvailability.toLowerCase()) {
+      reasons.push("disponibilidade compatível");
+    }
+
+    return reasons;
+  }
+
   async calculateAndSaveScore(applicationId: string) {
     const application = await prisma.application.findUnique({
       where: { id: applicationId },

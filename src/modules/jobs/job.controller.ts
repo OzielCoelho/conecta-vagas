@@ -2,9 +2,11 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import { JobService } from "./job.service";
 import { CreateJobDTO, UpdateJobDTO } from "./job.dto";
 import { CompanyService } from "../companies/company.service";
+import { MatchService } from "../match/match.service";
 
 const jobService = new JobService();
 const companyService = new CompanyService();
+const matchService = new MatchService();
 
 export class JobController {
   async create(request: FastifyRequest, reply: FastifyReply) {
@@ -19,7 +21,20 @@ export class JobController {
   }
 
   async getAll(request: FastifyRequest, reply: FastifyReply) {
+    if (request.user.role === "COMPANY") {
+      const company = await companyService.findByUserId(request.user.id);
+      const jobs = await jobService.findByCompanyId(company.id);
+
+      return reply.send(jobs);
+    }
+
     const jobs = await jobService.findAll();
+
+    return reply.send(jobs);
+  }
+
+  async getRecommended(request: FastifyRequest, reply: FastifyReply) {
+    const jobs = await matchService.getRecommendedJobsForStudent(request.user.id);
 
     return reply.send(jobs);
   }
