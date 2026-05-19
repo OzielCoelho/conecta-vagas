@@ -7,7 +7,7 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
-  const { login, startDemo } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -39,11 +39,6 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
     }
   }
 
-  function handleDemoLogin(mode: "student" | "company") {
-    startDemo(mode);
-    navigate(mode === "company" ? "/empresa/candidatos" : "/perfil/aluno", { replace: true });
-  }
-
   return (
     <>
       <form className="auth-form" onSubmit={handleSubmit}>
@@ -63,18 +58,6 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
           {isSubmitting ? "Entrando..." : "Entrar"}
         </button>
       </form>
-
-      <div className="auth-demo-actions">
-        <p className="auth-demo-actions__label">Acesso rápido para visualizar a interface</p>
-        <div className="auth-demo-actions__buttons">
-          <button className="secondary-button" type="button" onClick={() => handleDemoLogin("student")}>
-            Entrar como aluno demo
-          </button>
-          <button className="secondary-button" type="button" onClick={() => handleDemoLogin("company")}>
-            Entrar como empresa demo
-          </button>
-        </div>
-      </div>
 
       <p className="auth-card__footer">
         Ainda não tem conta? <button className="auth-link-button" type="button" onClick={onSwitchToRegister}>Criar cadastro</button>

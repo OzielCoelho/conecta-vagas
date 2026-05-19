@@ -1,22 +1,39 @@
-import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { Sidebar } from "../components/Sidebar";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
   "/vagas": "Vagas",
-  "/alunos": "Alunos",
+  "/alunos": "Candidatos",
   "/perfil/aluno": "Meu perfil",
+  "/perfil/aluno/candidaturas": "Candidaturas",
   "/perfil/empresa": "Meu perfil",
   "/empresa/candidatos": "Candidatos",
   "/configuracoes": "Configurações",
 };
 
 const roleLabels: Record<string, string> = {
-  STUDENT: "Aluno",
+  STUDENT: "Candidato",
   COMPANY: "Empresa",
   COORDINATOR: "Coordenação",
 };
+
+const studentTopTabs = [
+  { to: "/", label: "Dashboard", end: true },
+  { to: "/vagas", label: "Vagas" },
+  { to: "/perfil/aluno/candidaturas", label: "Candidaturas" },
+  { to: "/perfil/aluno", label: "Meu perfil" },
+  { to: "/configuracoes", label: "Configurações" },
+];
+
+const companyTopTabs = [
+  { to: "/", label: "Dashboard", end: true },
+  { to: "/vagas", label: "Vagas" },
+  { to: "/empresa/candidatos", label: "Candidatos" },
+  { to: "/perfil/empresa", label: "Meu perfil" },
+  { to: "/configuracoes", label: "Configurações" },
+];
 
 export function AppShell() {
   const location = useLocation();
@@ -24,6 +41,7 @@ export function AppShell() {
   const { user, isDemo } = useAuth();
   const currentPage = pageTitles[location.pathname] ?? "Dashboard";
   const userLabel = user ? roleLabels[user.role] ?? user.role : "Visitante";
+  const topTabs = user?.role === "COMPANY" ? companyTopTabs : user?.role === "STUDENT" ? studentTopTabs : [];
 
   function openAuthModal(type: "login" | "register") {
     navigate(`/?auth=${type}`, { replace: location.pathname === "/" });
@@ -31,7 +49,7 @@ export function AppShell() {
 
   return (
     <div className={user ? "app-shell" : "app-shell app-shell--public"}>
-      {user ? <Sidebar /> : null}
+      <Sidebar />
       <div className="app-main">
         <header className="topbar">
           <div className="topbar__bar" aria-label="Navegação superior">
@@ -69,6 +87,23 @@ export function AppShell() {
               )}
             </div>
           </div>
+
+          {user && topTabs.length ? (
+            <nav className="topbar__tabs" aria-label={`Abas de ${userLabel.toLowerCase()}`}>
+              {topTabs.map((tab) => (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  end={tab.end ?? false}
+                  className={({ isActive }) =>
+                    isActive ? "topbar__tab topbar__tab--active" : "topbar__tab"
+                  }
+                >
+                  {tab.label}
+                </NavLink>
+              ))}
+            </nav>
+          ) : null}
         </header>
 
         <main className="app-content">

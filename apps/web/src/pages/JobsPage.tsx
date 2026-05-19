@@ -2,12 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import {
-  getStoredDemoApplications,
-  getStoredDemoJobs,
-  isDemoToken,
-  saveDemoApplications,
-} from "../demo/demo-storage";
-import {
   applyToJob,
   getApplicationStatusLabel,
   getApplicationStatusTone,
@@ -37,7 +31,7 @@ type JobViewModel = {
 
 export function JobsPage() {
   const navigate = useNavigate();
-  const { token, user, isAuthenticated, startDemo } = useAuth();
+  const { token, user, isAuthenticated } = useAuth();
   const [jobs, setJobs] = useState<JobItem[]>([]);
   const [applications, setApplications] = useState<StudentApplication[]>([]);
   const [studentProfile, setStudentProfile] = useState<StudentProfile | null>(null);
@@ -52,24 +46,9 @@ export function JobsPage() {
 
   useEffect(() => {
     if (!token) {
-      setJobs(getStoredDemoJobs() as JobItem[]);
-      setApplications(getStoredDemoApplications() as StudentApplication[]);
+      setJobs([]);
+      setApplications([]);
       setStudentProfile(null);
-      setIsLoading(false);
-      return;
-    }
-
-    if (isDemoToken(token)) {
-      setJobs(getStoredDemoJobs() as JobItem[]);
-      setApplications(getStoredDemoApplications() as StudentApplication[]);
-      getMyStudentProfile(token)
-        .then((profile) => setStudentProfile(profile))
-        .catch(() => setStudentProfile(null))
-        .finally(() => setIsLoading(false));
-      return;
-    }
-
-    if (user?.role !== "STUDENT") {
       setIsLoading(false);
       return;
     }
@@ -77,11 +56,23 @@ export function JobsPage() {
     setIsLoading(true);
     setError(null);
 
-    Promise.all([getJobs(token), getMyApplications(token), getMyStudentProfile(token)])
-      .then(([jobsResponse, applicationsResponse, studentResponse]) => {
-        setJobs(jobsResponse);
-        setApplications(applicationsResponse);
-        setStudentProfile(studentResponse);
+    const requests: Promise<unknown>[] = [getJobs(token)];
+
+    if (user?.role === "STUDENT") {
+      requests.push(getMyApplications(token), getMyStudentProfile(token));
+    }
+
+    Promise.all(requests)
+      .then((responses) => {
+        setJobs(responses[0] as JobItem[]);
+
+        if (user?.role === "STUDENT") {
+          setApplications((responses[1] as StudentApplication[]) ?? []);
+          setStudentProfile((responses[2] as StudentProfile) ?? null);
+        } else {
+          setApplications([]);
+          setStudentProfile(null);
+        }
       })
       .catch((loadError) => {
         setError(loadError instanceof Error ? loadError.message : "Não foi possível carregar as vagas.");
@@ -96,10 +87,10 @@ export function JobsPage() {
       const application = applications.find((item) => item.job.id === job.id);
       const estimatedScore = studentProfile ? estimateJobMatch(studentProfile, job) : 0;
       const score = application?.score ?? estimatedScore;
-      const scoreLabel = application ? `${application.score}% nesta candidatura` : `${estimatedScore}% estimado`;
+      const scoreLabel = application ? `${application.score}% nesta candidatura` : studentProfile ? `${estimatedScore}% estimado` : "Faça login para ver seu score";
       const justification = studentProfile
         ? buildMatchJustification(studentProfile, job)
-        : "Entre ou teste a demonstração para ver o matching completo.";
+        : "Entre com sua conta para calcular o matching com base no seu perfil.";
 
       return {
         job,
@@ -152,23 +143,6 @@ export function JobsPage() {
     setError(null);
 
     try {
-      if (isDemoToken(token)) {
-        const job = jobs.find((item) => item.id === jobId);
-        if (!job) return;
-        const demoApplication: StudentApplication = {
-          id: `demo-application-${Date.now()}`,
-          status: "SENT",
-          score: studentProfile ? estimateJobMatch(studentProfile, job) : 88,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          job,
-        };
-        const nextApplications = [...applications.filter((item) => item.job.id !== jobId), demoApplication];
-        setApplications(nextApplications);
-        saveDemoApplications(nextApplications);
-        return;
-      }
-
       const created = await applyToJob(jobId, token);
       setApplications((current) => [...current.filter((item) => item.job.id !== jobId), created]);
     } catch (submitError) {
@@ -202,7 +176,7 @@ export function JobsPage() {
   return (
     <section className="page-section jobs-page">
       <header className="page-header jobs-page__header">
-        <div>
+        <div className="jobs-page__header-copy">
           <span className="page-eyebrow">Vagas</span>
           <h1>Encontre vagas com maior aderência ao seu perfil.</h1>
           <p>
@@ -237,49 +211,70 @@ export function JobsPage() {
       ) : (
         <section className="panel jobs-recommendation-banner">
           <div>
-            <span className="panel__label">Modo exploração</span>
-            <h2>{isVisitor ? "Veja uma vitrine de vagas antes de entrar." : "Ative a demonstração para ver o matching completo."}</h2>
-            <p>{isVisitor ? "Entre ou teste a demonstração para visualizar compatibilidade e status reais." : "Entre no modo demonstração para ver uma jornada completa com score e candidatura."}</p>
+            <span className="panel__label">Acesso necessário</span>
+            <h2>{isVisitor ? "Entre para visualizar seu matching com as vagas." : "Complete seu perfil para ativar o matching."}</h2>
+            <p>{isVisitor ? "Faça login para calcular aderência, acompanhar candidaturas e se candidatar às vagas." : "Seu score depende das skills, curso e disponibilidade cadastrados no perfil."}</p>
           </div>
-          <button className="secondary-button" type="button" onClick={() => {
-            startDemo("student");
-            navigate("/vagas");
-          }}>
-            Testar demonstração
-          </button>
+          {!isVisitor ? null : (
+            <button className="secondary-button" type="button" onClick={() => navigate("/?auth=login")}>
+              Entrar
+            </button>
+          )}
         </section>
       )}
 
-      <section className="panel jobs-filter-bar">
-        <label className="field jobs-filter-bar__search">
+      <section className="panel jobs-filter-bar jobs-filter-bar--compact">
+        <label className="field jobs-filter-bar__search jobs-filter-bar__search--compact">
           <span>Buscar vaga</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="React, dados, estágio remoto..." />
         </label>
 
-        <div className="jobs-filter-group">
-          <button className={modelFilter === "all" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setModelFilter("all")}>Todos</button>
-          <button className={modelFilter === "REMOTE" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setModelFilter("REMOTE")}>Remoto</button>
-          <button className={modelFilter === "HYBRID" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setModelFilter("HYBRID")}>Híbrido</button>
-          <button className={modelFilter === "IN_PERSON" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setModelFilter("IN_PERSON")}>Presencial</button>
-        </div>
+        <div className="jobs-filter-grid">
+          <label className="field jobs-filter-select">
+            <span>Modelo</span>
+            <select value={modelFilter} onChange={(event) => setModelFilter(event.target.value as ModelFilter)}>
+              <option value="all">Todos</option>
+              <option value="REMOTE">Remoto</option>
+              <option value="HYBRID">Híbrido</option>
+              <option value="IN_PERSON">Presencial</option>
+            </select>
+          </label>
 
-        <div className="jobs-filter-group">
-          <button className={matchBand === "all" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setMatchBand("all")}>Todos os matches</button>
-          <button className={matchBand === "90" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setMatchBand("90")}>90+</button>
-          <button className={matchBand === "80" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setMatchBand("80")}>80+</button>
-          <button className={matchBand === "70" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setMatchBand("70")}>70+</button>
-        </div>
+          <label className="field jobs-filter-select">
+            <span>Match</span>
+            <select value={matchBand} onChange={(event) => setMatchBand(event.target.value as MatchBand)}>
+              <option value="all">Todos os matches</option>
+              <option value="90">90+</option>
+              <option value="80">80+</option>
+              <option value="70">70+</option>
+            </select>
+          </label>
 
-        <div className="jobs-filter-group">
-          <button className={statusFilter === "all" ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setStatusFilter("all")}>Todos os status</button>
-          <button className={onlyMyApplications ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setOnlyMyApplications((current) => !current)}>Já me candidatei</button>
+          <label className="field jobs-filter-select">
+            <span>Status</span>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}>
+              <option value="all">Todos os status</option>
+              <option value="SENT">Enviado</option>
+              <option value="UNDER_REVIEW">Em análise</option>
+              <option value="INTERVIEW">Entrevista</option>
+              <option value="APPROVED">Aprovado</option>
+              <option value="REJECTED">Reprovado</option>
+            </select>
+          </label>
+
+          <label className="field jobs-filter-checkbox">
+            <span>Atalho</span>
+            <button className={onlyMyApplications ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setOnlyMyApplications((current) => !current)}>
+              Já me candidatei
+            </button>
+          </label>
         </div>
       </section>
 
       <section className="content-grid content-grid--three jobs-highlight-grid">
-        {topMatches.map((item) => (
+        {topMatches.map((item, index) => (
           <article key={item.job.id} className="panel panel--soft jobs-highlight-card">
-            <span className="panel__label">Vaga Match Perfeito</span>
+            <span className="panel__label">Top {index + 1}</span>
             <h2>{item.job.title}</h2>
             <p>{item.job.company?.name ?? "Empresa parceira"}</p>
             <span className="status-pill status-pill--highlight">{item.scoreLabel}</span>
@@ -320,7 +315,7 @@ export function JobsPage() {
 
                 <div className="jobs-job-card__score">
                   <strong>{item.score}%</strong>
-                  <span>{item.application ? "Score real" : "Estimado"}</span>
+                  <span>{item.application ? "Score real" : studentProfile ? "Estimado" : "Indisponível"}</span>
                 </div>
               </div>
 
@@ -355,7 +350,7 @@ export function JobsPage() {
                 <button
                   className="primary-button"
                   type="button"
-                  disabled={submittingJobId === item.job.id || Boolean(item.application)}
+                  disabled={submittingJobId === item.job.id || Boolean(item.application) || !isAuthenticated || user?.role !== "STUDENT"}
                   onClick={() => handleApply(item.job.id)}
                 >
                   {item.application ? "Candidatura enviada" : submittingJobId === item.job.id ? "Enviando..." : "Candidatar-se com 1 clique"}

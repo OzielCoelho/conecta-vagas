@@ -11,7 +11,7 @@ export function AuthModal({ title, subtitle, onClose, children }: AuthModalProps
   return (
     <div className="auth-modal-overlay" role="presentation" onClick={onClose}>
       <div
-        className="auth-modal"
+        className="auth-modal auth-modal--wide"
         role="dialog"
         aria-modal="true"
         aria-labelledby="auth-modal-title"
@@ -21,7 +21,7 @@ export function AuthModal({ title, subtitle, onClose, children }: AuthModalProps
           ×
         </button>
 
-        <div className="auth-card__intro">
+        <div className="auth-card__intro auth-modal__intro auth-modal__intro--compact">
           <span className="page-eyebrow">Acesso</span>
           <h1 id="auth-modal-title">{title}</h1>
           <p>{subtitle}</p>

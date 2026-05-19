@@ -66,3 +66,7 @@ export function apiPost<T>(path: string, body: unknown, token?: string | null) {
 export function apiPut<T>(path: string, body: unknown, token?: string | null) {
   return apiRequest<T>(path, { method: "PUT", body, token });
 }
+
+export function apiPatch<T>(path: string, body?: unknown, token?: string | null) {
+  return apiRequest<T>(path, { method: "PATCH", body, token });
+}

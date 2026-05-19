@@ -32,6 +32,15 @@ const studentMenuItems: SidebarMenuItem[] = [
     ),
   },
   {
+    to: "/perfil/aluno/candidaturas",
+    label: "Candidaturas",
+    icon: (
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M7 4.5h10A1.5 1.5 0 0 1 18.5 6v12A1.5 1.5 0 0 1 17 19.5H7A1.5 1.5 0 0 1 5.5 18V6A1.5 1.5 0 0 1 7 4.5Zm1 3v1.5h8V7.5Zm0 4v1.5h8V11.5Zm0 4V17h5v-1.5Z" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
     to: "/configuracoes",
     label: "Configurações",
     icon: (
@@ -55,7 +64,7 @@ const companyMenuItems: SidebarMenuItem[] = [
   },
   {
     to: "/alunos",
-    label: "Alunos",
+    label: "Candidatos",
     icon: (
       <svg viewBox="0 0 24 24" focusable="false">
         <path d="M12 5a3.5 3.5 0 1 1-3.5 3.5A3.5 3.5 0 0 1 12 5Zm0 9c4 0 7 2.1 7 4.5V20H5v-1.5C5 16.1 8 14 12 14Z" fill="currentColor" />
@@ -74,7 +83,7 @@ const companyMenuItems: SidebarMenuItem[] = [
 ];
 
 export function Sidebar() {
-  const { logout, user, isDemo } = useAuth();
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
 
   const profileItem =
@@ -101,7 +110,7 @@ export function Sidebar() {
 
   function handleLogout() {
     logout();
-    navigate(isDemo ? "/" : "/?auth=login", { replace: true });
+    navigate("/?auth=login", { replace: true });
   }
 
   return (
@@ -167,10 +176,10 @@ export function Sidebar() {
       </div>
 
       <div className="sidebar__footer sidebar__footer--stacked">
-        <p>{isDemo ? "Você está navegando com um perfil fictício editável." : user?.role === "COMPANY" ? "Centralize vagas, alunos e candidaturas em um único painel." : "Acompanhe sua empregabilidade com vagas, perfil e candidaturas em um só lugar."}</p>
+        <p>{user?.role === "COMPANY" ? "Centralize vagas, candidatos e candidaturas em um único painel." : "Acompanhe sua empregabilidade com vagas, perfil e candidaturas em um só lugar."}</p>
         {user ? (
           <button className="secondary-button" type="button" onClick={handleLogout}>
-            {isDemo ? "Sair da demonstração" : "Sair"}
+            Sair
           </button>
         ) : null}
       </div>

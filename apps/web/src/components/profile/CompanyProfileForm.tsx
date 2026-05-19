@@ -45,22 +45,26 @@ export function CompanyProfileForm({
   }
 
   return (
-    <form className="auth-form" onSubmit={handleSubmit}>
-      <label className="field">
-        <span>Nome da empresa</span>
-        <input value={name} onChange={(event) => setName(event.target.value)} required />
-      </label>
+    <form className="auth-form profile-form profile-form--company" onSubmit={handleSubmit}>
+      <div className="profile-form__grid profile-form__grid--company">
+        <label className="field profile-form__field--full">
+          <span>Nome da empresa</span>
+          <input value={name} onChange={(event) => setName(event.target.value)} required />
+        </label>
 
-      <label className="field">
-        <span>Descrição / sobre</span>
-        <textarea value={about} onChange={(event) => setAbout(event.target.value)} rows={4} />
-      </label>
+        <label className="field profile-form__field--full">
+          <span>Descrição / sobre</span>
+          <textarea value={about} onChange={(event) => setAbout(event.target.value)} rows={6} />
+        </label>
+      </div>
 
       {error ? <p className="form-error">{error}</p> : null}
 
-      <button className="primary-button" type="submit" disabled={isSubmitting}>
-        {isSubmitting ? "Salvando..." : submitLabel}
-      </button>
+      <div className="profile-form__actions">
+        <button className="primary-button" type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Salvando..." : submitLabel}
+        </button>
+      </div>
     </form>
   );
 }
