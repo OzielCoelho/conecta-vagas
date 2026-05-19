@@ -1,5 +1,5 @@
 import { prisma } from "../../shared/prisma/prisma.client";
-import { CreateUserDTO } from "./user.dto";
+import { CreateUserDTO, UpdateUserDTO } from "./user.dto";
 
 export class UserRepository {
   async create(data: CreateUserDTO & { passwordHash: string }) {
@@ -21,6 +21,20 @@ export class UserRepository {
   async findById(id: string) {
     return prisma.user.findUnique({
       where: { id },
+    });
+  }
+
+  async update(id: string, data: UpdateUserDTO) {
+    return prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
+  async updatePassword(id: string, passwordHash: string) {
+    return prisma.user.update({
+      where: { id },
+      data: { password: passwordHash },
     });
   }
 }

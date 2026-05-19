@@ -2,6 +2,7 @@ export type AuthUser = {
   id: string;
   email: string;
   role: "STUDENT" | "COMPANY" | "COORDINATOR";
+  name?: string;
 };
 
 export type StoredSession = {

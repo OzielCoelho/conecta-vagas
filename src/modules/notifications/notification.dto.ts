@@ -1,4 +1,4 @@
-import { NotificationCategory, NotificationType, Role } from "../../generated/prisma";
+import { NotificationCategory, NotificationType, Prisma, Role } from "../../generated/prisma";
 
 export interface ListNotificationsQueryDTO {
   limit?: number;
@@ -26,5 +26,5 @@ export interface CreateNotificationDTO {
   actorUserId?: string;
   entityType?: string;
   entityId?: string;
-  metadata?: Record<string, unknown>;
+  metadata?: Prisma.InputJsonValue;
 }

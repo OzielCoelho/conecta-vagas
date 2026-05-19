@@ -10,11 +10,17 @@ import { applicationRoutes } from "./modules/applications/application.routes";
 import { notificationRoutes } from "./modules/notifications/notification.routes";
 import { AppError } from "./shared/errors/app.error";
 
+const jwtSecret = process.env.JWT_SECRET;
+
+if (!jwtSecret) {
+  throw new Error("JWT_SECRET não configurado.");
+}
+
 const app = Fastify({ logger: true });
 
 app.register(fastifyCors, { origin: true });
 app.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET ?? "secret_dev",
+  secret: jwtSecret,
 });
 
 app.register(userRoutes, { prefix: "/users" });
@@ -24,9 +30,22 @@ app.register(companyRoutes, { prefix: "/companies" });
 app.register(applicationRoutes, { prefix: "/applications" });
 app.register(notificationRoutes, { prefix: "/notifications" });
 
+function isValidationError(error: unknown): error is Error & { validation: unknown[] } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "validation" in error &&
+    Array.isArray((error as { validation?: unknown }).validation)
+  );
+}
+
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {
     return reply.status(error.statusCode).send({ message: error.message });
+  }
+
+  if (isValidationError(error) && error.validation.length > 0) {
+    return reply.status(400).send({ message: error.message });
   }
 
   app.log.error(error);

@@ -24,6 +24,13 @@ export class JobController {
     return reply.send(jobs);
   }
 
+  async getMine(request: FastifyRequest, reply: FastifyReply) {
+    const company = await companyService.findByUserId(request.user.id);
+    const jobs = await jobService.findByCompanyId(company.id);
+
+    return reply.send(jobs);
+  }
+
   async getById(request: FastifyRequest, reply: FastifyReply) {
     const { id } = request.params as { id: string };
 
@@ -36,7 +43,7 @@ export class JobController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateJobDTO;
 
-    const job = await jobService.update(id, data, request.user.id);
+    const job = await jobService.update(id, data, request.user.id, request.user.role);
 
     return reply.send(job);
   }

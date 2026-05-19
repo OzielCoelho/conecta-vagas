@@ -65,6 +65,7 @@ model Student {
   skills       String[]
   availability String
   portfolio    String?
+  photoUrl     String?
   isVisible    Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

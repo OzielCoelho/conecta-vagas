@@ -1,5 +1,6 @@
-import { ApplicationStatus } from "../../generated/prisma";
+import { ApplicationStatus, Role } from "../../generated/prisma";
 import { AppError } from "../../shared/errors/app.error";
+import { CompanyService } from "../companies/company.service";
 import { JobRepository } from "../jobs/job.repository";
 import { MatchService } from "../match/match.service";
 import { NotificationService } from "../notifications/notification.service";
@@ -12,6 +13,7 @@ const studentRepository = new StudentRepository();
 const jobRepository = new JobRepository();
 const matchService = new MatchService();
 const notificationService = new NotificationService();
+const companyService = new CompanyService();
 
 const validTransitions: Record<ApplicationStatus, ApplicationStatus[]> = {
   SENT: ["UNDER_REVIEW", "REJECTED"],
@@ -60,7 +62,21 @@ export class ApplicationService {
     return applicationWithScore ?? application;
   }
 
-  async findByJobId(jobId: string) {
+  async findByJobId(jobId: string, actorUserId: string, actorRole: Role) {
+    const job = await jobRepository.findById(jobId);
+
+    if (!job) {
+      throw new AppError("Vaga não encontrada.", 404);
+    }
+
+    if (actorRole === "COMPANY") {
+      const company = await companyService.findByUserId(actorUserId);
+
+      if (job.companyId !== company.id) {
+        throw new AppError("Acesso negado.", 403);
+      }
+    }
+
     return applicationRepository.findByJobId(jobId);
   }
 
@@ -68,11 +84,19 @@ export class ApplicationService {
     return applicationRepository.findByStudentId(studentId);
   }
 
-  async updateStatus(id: string, data: UpdateApplicationStatusDTO, actorUserId?: string) {
+  async updateStatus(id: string, data: UpdateApplicationStatusDTO, actorUserId: string, actorRole: Role) {
     const application = await applicationRepository.findById(id);
 
     if (!application) {
       throw new AppError("Candidatura não encontrada.", 404);
+    }
+
+    if (actorRole === "COMPANY") {
+      const company = await companyService.findByUserId(actorUserId);
+
+      if (application.job.companyId !== company.id) {
+        throw new AppError("Acesso negado.", 403);
+      }
     }
 
     const allowed = validTransitions[application.status];

@@ -1,175 +1,161 @@
-import { useEffect, useState } from "react";
-
-const settingsChecklist = [
-  "Preferências de conta e perfil",
-  "Permissões por tipo de usuário",
-  "Notificações e comunicação com candidatos",
-];
-
-type StoredSettings = {
-  darkCards?: boolean;
-  compactMode?: boolean;
-  notificationsEnabled?: boolean;
-  notificationToastsEnabled?: boolean;
-  notificationAutoRefreshEnabled?: boolean;
-};
-
-const SETTINGS_KEY = "conecta_vagas_settings";
+import { useEffect, useState, type FormEvent } from "react";
+import { useAuth } from "../auth/AuthProvider";
+import { updateCurrentUser, updateCurrentUserPassword } from "../services/auth";
 
 export function SettingsPage() {
-  const [darkCards, setDarkCards] = useState(false);
-  const [compactMode, setCompactMode] = useState(false);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [notificationToastsEnabled, setNotificationToastsEnabled] = useState(true);
-  const [notificationAutoRefreshEnabled, setNotificationAutoRefreshEnabled] = useState(true);
-  const [statusMessage, setStatusMessage] = useState("Preferências prontas para personalização.");
+  const { token, user, setUser } = useAuth();
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [accountError, setAccountError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [accountSuccess, setAccountSuccess] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(SETTINGS_KEY);
-    if (!stored) return;
+    setEmail(user?.email ?? "");
+  }, [user?.email]);
+
+  async function handleAccountSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!token) {
+      setAccountError("Sessão inválida. Faça login novamente.");
+      return;
+    }
+
+    setIsSavingAccount(true);
+    setAccountError(null);
+    setAccountSuccess(null);
 
     try {
-      const parsed = JSON.parse(stored) as StoredSettings;
-      setDarkCards(Boolean(parsed.darkCards));
-      setCompactMode(Boolean(parsed.compactMode));
-      setNotificationsEnabled(parsed.notificationsEnabled ?? true);
-      setNotificationToastsEnabled(parsed.notificationToastsEnabled ?? true);
-      setNotificationAutoRefreshEnabled(parsed.notificationAutoRefreshEnabled ?? true);
-    } catch {
-      window.localStorage.removeItem(SETTINGS_KEY);
+      const updatedUser = await updateCurrentUser({ email }, token);
+      setUser(updatedUser);
+      setAccountSuccess("Conta atualizada com sucesso.");
+    } catch (error) {
+      setAccountError(error instanceof Error ? error.message : "Não foi possível atualizar a conta.");
+    } finally {
+      setIsSavingAccount(false);
     }
-  }, []);
+  }
 
-  useEffect(() => {
-    window.localStorage.setItem(
-      SETTINGS_KEY,
-      JSON.stringify({
-        darkCards,
-        compactMode,
-        notificationsEnabled,
-        notificationToastsEnabled,
-        notificationAutoRefreshEnabled,
-      })
-    );
-  }, [compactMode, darkCards, notificationAutoRefreshEnabled, notificationToastsEnabled, notificationsEnabled]);
+  async function handlePasswordSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-  const settingsItems = [
-    {
-      label: "Tema visual",
-      value: darkCards ? "Cards destacados" : "Claro por enquanto",
-      helper: "Preferência aplicada imediatamente nos cards desta tela",
-    },
-    {
-      label: "Atualização automática",
-      value: notificationAutoRefreshEnabled ? "Polling ativo" : "Atualização manual",
-      helper: "Controla a recarga automática das notificações no topo",
-    },
-    {
-      label: "Notificações",
-      value: notificationsEnabled ? "Feed ativo" : "Feed pausado",
-      helper: notificationToastsEnabled ? "Toasts e lista habilitados" : "Somente lista no sino",
-    },
-  ];
+    if (!token) {
+      setPasswordError("Sessão inválida. Faça login novamente.");
+      return;
+    }
+
+    setIsSavingPassword(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
+    try {
+      await updateCurrentUserPassword({ currentPassword, newPassword }, token);
+      setCurrentPassword("");
+      setNewPassword("");
+      setPasswordSuccess("Senha alterada com sucesso.");
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : "Não foi possível alterar a senha.");
+    } finally {
+      setIsSavingPassword(false);
+    }
+  }
 
   return (
-    <section className={compactMode ? "page-section settings-page settings-page--refined settings-page--compact" : "page-section settings-page settings-page--refined"}>
+    <section className="page-section settings-page settings-page--refined">
       <header className="page-header settings-page__header">
         <div>
-          <span className="page-eyebrow">Configurações</span>
-          <h1>Uma base pronta para evoluir o aplicativo.</h1>
-          <p>
-            Aqui podemos depois adicionar preferências, conta do usuário, permissões e ajustes de integração.
-          </p>
+          <span className="page-eyebrow">Conta</span>
+          <h1>Conta e segurança</h1>
+          <p>Atualize seu email de acesso e altere sua senha sem sair da plataforma.</p>
         </div>
       </header>
 
-      <section className="panel settings-control-panel">
-        <div>
-          <span className="panel__label">Controles interativos</span>
-          <h2>Ative preferências visuais e comportamentais</h2>
-          <p>{statusMessage}</p>
-        </div>
-
-        <div className="settings-toggle-list">
-          <button className={darkCards ? "settings-toggle settings-toggle--active" : "settings-toggle"} type="button" onClick={() => {
-            setDarkCards((current) => !current);
-            setStatusMessage("Preferência visual atualizada.");
-          }}>
-            <span>Cards com mais destaque</span>
-            <span className="settings-toggle__switch" aria-hidden="true" />
-          </button>
-
-          <button className={compactMode ? "settings-toggle settings-toggle--active" : "settings-toggle"} type="button" onClick={() => {
-            setCompactMode((current) => !current);
-            setStatusMessage("Modo de densidade ajustado.");
-          }}>
-            <span>Modo compacto</span>
-            <span className="settings-toggle__switch" aria-hidden="true" />
-          </button>
-
-          <button className={notificationsEnabled ? "settings-toggle settings-toggle--active" : "settings-toggle"} type="button" onClick={() => {
-            setNotificationsEnabled((current) => !current);
-            setStatusMessage("Visibilidade geral das notificações atualizada.");
-          }}>
-            <span>Feed de notificações</span>
-            <span className="settings-toggle__switch" aria-hidden="true" />
-          </button>
-
-          <button className={notificationToastsEnabled ? "settings-toggle settings-toggle--active" : "settings-toggle"} type="button" onClick={() => {
-            setNotificationToastsEnabled((current) => !current);
-            setStatusMessage("Exibição dos toasts ajustada.");
-          }}>
-            <span>Toasts no topo</span>
-            <span className="settings-toggle__switch" aria-hidden="true" />
-          </button>
-
-          <button className={notificationAutoRefreshEnabled ? "settings-toggle settings-toggle--active" : "settings-toggle"} type="button" onClick={() => {
-            setNotificationAutoRefreshEnabled((current) => !current);
-            setStatusMessage("Atualização automática das notificações ajustada.");
-          }}>
-            <span>Atualização automática</span>
-            <span className="settings-toggle__switch" aria-hidden="true" />
-          </button>
-        </div>
-      </section>
-
       <section className="content-grid content-grid--three settings-page__grid">
-        {settingsItems.map((item) => (
-          <article key={item.label} className={darkCards ? "panel settings-card settings-card--interactive settings-card--interactive-active" : "panel settings-card settings-card--interactive"}>
-            <span className="panel__label">{item.label}</span>
-            <strong>{item.value}</strong>
-            <p>{item.helper}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="settings-page__content">
-        <article className="panel settings-card settings-card--wide">
-          <span className="panel__label">Próximas evoluções</span>
-          <h2>Esta tela já segue o sistema visual e pode crescer sem mudar de linguagem.</h2>
-          <ul className="feature-list">
-            {settingsChecklist.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
+        <article className="panel settings-card settings-card--interactive">
+          <span className="panel__label">Perfil de acesso</span>
+          <strong>{user?.name ?? user?.email ?? "Usuário"}</strong>
+          <p>{user?.role === "COMPANY" ? "Conta vinculada a empresa" : user?.role === "STUDENT" ? "Conta vinculada a candidato" : "Conta de coordenação"}</p>
+        </article>
+        <article className="panel settings-card settings-card--interactive">
+          <span className="panel__label">Email atual</span>
+          <strong>{user?.email ?? "Não disponível"}</strong>
+          <p>Usado para login e recuperação de acesso.</p>
+        </article>
+        <article className="panel settings-card settings-card--interactive">
+          <span className="panel__label">Segurança</span>
+          <strong>Senha protegida</strong>
+          <p>Troque sua senha sempre que precisar reforçar a segurança da conta.</p>
         </article>
       </section>
 
-      <section className="content-grid content-grid--three settings-page__extras">
-        <article className="panel settings-card settings-card--compact">
-          <span className="panel__label">Conta</span>
-          <strong>Preferências prontas</strong>
-          <p>Espaço reservado para dados do usuário e personalização.</p>
+      <section className="settings-page__content settings-account-layout">
+        <article className="panel settings-card settings-card--wide settings-form-card">
+          <div>
+            <span className="panel__label">Dados da conta</span>
+            <h2>Atualizar email</h2>
+            <p>Mantenha o email de acesso sempre atualizado.</p>
+          </div>
+
+          {accountSuccess ? <p className="form-success">{accountSuccess}</p> : null}
+          {accountError ? <p className="form-error">{accountError}</p> : null}
+
+          <form className="auth-form settings-form" onSubmit={handleAccountSubmit}>
+            <label className="field">
+              <span>Email</span>
+              <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            </label>
+
+            <div className="profile-form__actions">
+              <button className="primary-button" type="submit" disabled={isSavingAccount}>
+                {isSavingAccount ? "Salvando..." : "Salvar email"}
+              </button>
+            </div>
+          </form>
         </article>
-        <article className="panel settings-card settings-card--compact">
-          <span className="panel__label">Permissões</span>
-          <strong>Fluxo por papel</strong>
-          <p>Base para diferenciar candidato, empresa e coordenação.</p>
-        </article>
-        <article className="panel settings-card settings-card--compact">
-          <span className="panel__label">Notificações</span>
-          <strong>Comunicação central</strong>
-          <p>Área preparada para alertas, toasts e atualização automática.</p>
+
+        <article className="panel settings-card settings-card--wide settings-form-card">
+          <div>
+            <span className="panel__label">Segurança</span>
+            <h2>Alterar senha</h2>
+            <p>Use uma nova senha com pelo menos 6 caracteres.</p>
+          </div>
+
+          {passwordSuccess ? <p className="form-success">{passwordSuccess}</p> : null}
+          {passwordError ? <p className="form-error">{passwordError}</p> : null}
+
+          <form className="auth-form settings-form" onSubmit={handlePasswordSubmit}>
+            <label className="field">
+              <span>Senha atual</span>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                required
+              />
+            </label>
+
+            <label className="field">
+              <span>Nova senha</span>
+              <input
+                type="password"
+                minLength={6}
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+              />
+            </label>
+
+            <div className="profile-form__actions">
+              <button className="primary-button" type="submit" disabled={isSavingPassword}>
+                {isSavingPassword ? "Salvando..." : "Atualizar senha"}
+              </button>
+            </div>
+          </form>
         </article>
       </section>
     </section>

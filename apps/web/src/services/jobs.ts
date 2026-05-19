@@ -1,4 +1,4 @@
-import { apiGet } from "./api";
+import { apiGet, apiPost, apiPut } from "./api";
 import type { StudentProfile } from "./students";
 
 export type JobModel = "REMOTE" | "IN_PERSON" | "HYBRID";
@@ -22,12 +22,38 @@ export type JobItem = {
   };
 };
 
+export type CreateJobInput = {
+  title: string;
+  description: string;
+  skills: string[];
+  model: JobModel;
+  location?: string;
+  course?: string;
+  availability?: string;
+};
+
+export type UpdateJobInput = CreateJobInput & {
+  isActive?: boolean;
+};
+
 export function getJobs(token: string) {
   return apiGet<JobItem[]>("/jobs", token);
 }
 
+export function getMyCompanyJobs(token: string) {
+  return apiGet<JobItem[]>("/jobs/mine", token);
+}
+
 export function getJobById(id: string, token: string) {
   return apiGet<JobItem>(`/jobs/${id}`, token);
+}
+
+export function createJob(data: CreateJobInput, token: string) {
+  return apiPost<JobItem>("/jobs", data, token);
+}
+
+export function updateJob(id: string, data: UpdateJobInput, token: string) {
+  return apiPut<JobItem>(`/jobs/${id}`, data, token);
 }
 
 export function getJobModelLabel(model: JobModel) {

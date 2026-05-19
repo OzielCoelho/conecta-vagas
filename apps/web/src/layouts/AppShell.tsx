@@ -1,16 +1,19 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { Sidebar } from "../components/Sidebar";
 
 const pageTitles: Record<string, string> = {
   "/": "Dashboard",
+  "/feed": "Feed",
   "/vagas": "Vagas",
   "/alunos": "Candidatos",
   "/perfil/aluno": "Meu perfil",
   "/perfil/aluno/candidaturas": "Candidaturas",
   "/perfil/empresa": "Meu perfil",
   "/empresa/candidatos": "Candidatos",
-  "/configuracoes": "Configurações",
+  "/empresa/vagas": "Minhas vagas",
+  "/configuracoes": "Conta e segurança",
 };
 
 const roleLabels: Record<string, string> = {
@@ -19,32 +22,36 @@ const roleLabels: Record<string, string> = {
   COORDINATOR: "Coordenação",
 };
 
-const studentTopTabs = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/vagas", label: "Vagas" },
-  { to: "/perfil/aluno/candidaturas", label: "Candidaturas" },
-  { to: "/perfil/aluno", label: "Meu perfil" },
-  { to: "/configuracoes", label: "Configurações" },
-];
+function getUserInitials(name?: string, email?: string) {
+  const source = name?.trim() || email?.trim() || "Usuário";
+  const parts = source.split(" ").filter(Boolean);
 
-const companyTopTabs = [
-  { to: "/", label: "Dashboard", end: true },
-  { to: "/vagas", label: "Vagas" },
-  { to: "/empresa/candidatos", label: "Candidatos" },
-  { to: "/perfil/empresa", label: "Meu perfil" },
-  { to: "/configuracoes", label: "Configurações" },
-];
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+}
 
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isDemo } = useAuth();
+  const { user, isDemo, logout } = useAuth();
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const currentPage = pageTitles[location.pathname] ?? "Dashboard";
   const userLabel = user ? roleLabels[user.role] ?? user.role : "Visitante";
-  const topTabs = user?.role === "COMPANY" ? companyTopTabs : user?.role === "STUDENT" ? studentTopTabs : [];
+  const userName = useMemo(() => user?.name?.trim() || user?.email || "Usuário", [user]);
+  const initials = useMemo(() => getUserInitials(user?.name, user?.email), [user]);
 
   function openAuthModal(type: "login" | "register") {
     navigate(`/?auth=${type}`, { replace: location.pathname === "/" });
+  }
+
+  function handleOpenSettings() {
+    setIsUserMenuOpen(false);
+    navigate("/configuracoes");
+  }
+
+  function handleLogout() {
+    setIsUserMenuOpen(false);
+    logout();
+    navigate("/?auth=login", { replace: true });
   }
 
   return (
@@ -62,15 +69,32 @@ export function AppShell() {
                 <div className="topbar__user-summary" aria-label="Usuário logado">
                   <div className="topbar__user-text">
                     <span className="topbar__user-greeting">{isDemo ? "Modo demonstração" : `Bem-vindo(a), ${userLabel}`}</span>
-                    <strong>{user.email}</strong>
-                    <span className="topbar__user-email">Painel Conecta Jovem</span>
+                    <strong>{userName}</strong>
+                    <span className="topbar__user-email">{user.email}</span>
                   </div>
 
-                  <span className="topbar__user-icon" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-3.33 0-6 1.79-6 4v1h12v-1c0-2.21-2.67-4-6-4Z" fill="currentColor" />
-                    </svg>
-                  </span>
+                  <div className="topbar__user-menu-wrap">
+                    <button
+                      className="topbar__user-icon topbar__user-icon--button"
+                      type="button"
+                      aria-label="Abrir menu da conta"
+                      aria-expanded={isUserMenuOpen}
+                      onClick={() => setIsUserMenuOpen((current) => !current)}
+                    >
+                      <span>{initials}</span>
+                    </button>
+
+                    {isUserMenuOpen ? (
+                      <div className="topbar__user-menu" role="menu">
+                        <button className="topbar__user-menu-item" type="button" onClick={handleOpenSettings}>
+                          Conta e segurança
+                        </button>
+                        <button className="topbar__user-menu-item" type="button" onClick={handleLogout}>
+                          Sair
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               ) : (
                 <div className="topbar__visitor-actions">
@@ -87,23 +111,6 @@ export function AppShell() {
               )}
             </div>
           </div>
-
-          {user && topTabs.length ? (
-            <nav className="topbar__tabs" aria-label={`Abas de ${userLabel.toLowerCase()}`}>
-              {topTabs.map((tab) => (
-                <NavLink
-                  key={tab.to}
-                  to={tab.to}
-                  end={tab.end ?? false}
-                  className={({ isActive }) =>
-                    isActive ? "topbar__tab topbar__tab--active" : "topbar__tab"
-                  }
-                >
-                  {tab.label}
-                </NavLink>
-              ))}
-            </nav>
-          ) : null}
         </header>
 
         <main className="app-content">
