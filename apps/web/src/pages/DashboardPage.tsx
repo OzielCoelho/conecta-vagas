@@ -1,5 +1,5 @@
 import { useAuth } from "../auth/AuthProvider";
-import { CompanyCandidatesPage } from "./CompanyCandidatesPage";
+import { CompanyJobsPage } from "./CompanyJobsPage";
 import { HomePage } from "./HomePage";
 import { StudentDashboardPage } from "./StudentDashboardPage";
 
@@ -11,7 +11,7 @@ export function DashboardPage() {
   }
 
   if (user.role === "COMPANY") {
-    return <CompanyCandidatesPage />;
+    return <CompanyJobsPage />;
   }
 
   return <StudentDashboardPage />;

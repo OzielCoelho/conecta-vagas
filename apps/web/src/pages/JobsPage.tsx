@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { getStoredDemoJobs } from "../demo/demo-storage";
 import {
   applyToJob,
   getApplicationStatusLabel,
@@ -29,6 +30,16 @@ type JobViewModel = {
   justification: string;
 };
 
+function mergeWithDemoJobs(realJobs: JobItem[]) {
+  const demoJobs = getStoredDemoJobs() as JobItem[];
+  if (realJobs.length >= 4) return realJobs;
+
+  return [
+    ...realJobs,
+    ...demoJobs.filter((demoJob: JobItem) => !realJobs.some((job) => job.id === demoJob.id)),
+  ];
+}
+
 export function JobsPage() {
   const navigate = useNavigate();
   const { token, user, isAuthenticated } = useAuth();
@@ -46,7 +57,7 @@ export function JobsPage() {
 
   useEffect(() => {
     if (!token) {
-      setJobs([]);
+      setJobs(getStoredDemoJobs() as JobItem[]);
       setApplications([]);
       setStudentProfile(null);
       setIsLoading(false);
@@ -62,14 +73,17 @@ export function JobsPage() {
       requests.push(getMyApplications(token), getMyStudentProfile(token));
     }
 
-    Promise.all(requests)
+    Promise.allSettled(requests)
       .then((responses) => {
-        setJobs(responses[0] as JobItem[]);
+        const jobsResult = responses[0];
+        const realJobs = jobsResult.status === "fulfilled" ? (jobsResult.value as JobItem[]) : [];
 
         if (user?.role === "STUDENT") {
-          setApplications((responses[1] as StudentApplication[]) ?? []);
-          setStudentProfile((responses[2] as StudentProfile) ?? null);
+          setJobs(mergeWithDemoJobs(realJobs));
+          setApplications(responses[1]?.status === "fulfilled" ? (responses[1].value as StudentApplication[]) : []);
+          setStudentProfile(responses[2]?.status === "fulfilled" ? (responses[2].value as StudentProfile) : null);
         } else {
+          setJobs(realJobs);
           setApplications([]);
           setStudentProfile(null);
         }
@@ -87,7 +101,11 @@ export function JobsPage() {
       const application = applications.find((item) => item.job.id === job.id);
       const estimatedScore = studentProfile ? estimateJobMatch(studentProfile, job) : 0;
       const score = application?.score ?? estimatedScore;
-      const scoreLabel = application ? `${application.score}% nesta candidatura` : studentProfile ? `${estimatedScore}% estimado` : "Faça login para ver seu score";
+      const scoreLabel = application
+        ? `${application.score}% nesta candidatura`
+        : studentProfile
+          ? `${estimatedScore}% estimado`
+          : "Faça login para ver seu score";
       const justification = studentProfile
         ? buildMatchJustification(studentProfile, job)
         : "Entre com sua conta para calcular o matching com base no seu perfil.";
@@ -204,7 +222,9 @@ export function JobsPage() {
           <div>
             <span className="panel__label">Compatibilidade ativa</span>
             <h2>O ranking considera suas skills, curso e disponibilidade.</h2>
-            <p>{studentProfile.skills.slice(0, 3).join(" • ")} • {studentProfile.course}</p>
+            <p>
+              {studentProfile.skills.slice(0, 3).join(" • ")} • {studentProfile.course}
+            </p>
           </div>
           <span className="status-pill status-pill--highlight">Matching em tempo real</span>
         </section>
@@ -212,8 +232,16 @@ export function JobsPage() {
         <section className="panel jobs-recommendation-banner">
           <div>
             <span className="panel__label">Acesso necessário</span>
-            <h2>{isVisitor ? "Entre para visualizar seu matching com as vagas." : "Complete seu perfil para ativar o matching."}</h2>
-            <p>{isVisitor ? "Faça login para calcular aderência, acompanhar candidaturas e se candidatar às vagas." : "Seu score depende das skills, curso e disponibilidade cadastrados no perfil."}</p>
+            <h2>
+              {isVisitor
+                ? "Entre para visualizar seu matching com as vagas."
+                : "Complete seu perfil para ativar o matching."}
+            </h2>
+            <p>
+              {isVisitor
+                ? "Enquanto isso, você já pode explorar vagas demonstrativas e entender como a plataforma funciona."
+                : "Seu score depende das skills, curso e disponibilidade cadastrados no perfil."}
+            </p>
           </div>
           {!isVisitor ? null : (
             <button className="secondary-button" type="button" onClick={() => navigate("/?auth=login")}>
@@ -264,7 +292,11 @@ export function JobsPage() {
 
           <label className="field jobs-filter-checkbox">
             <span>Atalho</span>
-            <button className={onlyMyApplications ? "role-option role-option--active" : "role-option"} type="button" onClick={() => setOnlyMyApplications((current) => !current)}>
+            <button
+              className={onlyMyApplications ? "role-option role-option--active" : "role-option"}
+              type="button"
+              onClick={() => setOnlyMyApplications((current) => !current)}
+            >
               Já me candidatei
             </button>
           </label>
@@ -289,13 +321,17 @@ export function JobsPage() {
           <span className="panel__label">Nenhuma vaga encontrada</span>
           <h2>Não encontramos vagas com esse filtro.</h2>
           <p>Experimente limpar a busca ou combinar menos filtros para ampliar os resultados.</p>
-          <button className="secondary-button" type="button" onClick={() => {
-            setQuery("");
-            setModelFilter("all");
-            setStatusFilter("all");
-            setMatchBand("all");
-            setOnlyMyApplications(false);
-          }}>
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              setQuery("");
+              setModelFilter("all");
+              setStatusFilter("all");
+              setMatchBand("all");
+              setOnlyMyApplications(false);
+            }}
+          >
             Limpar filtros
           </button>
         </section>
@@ -323,13 +359,19 @@ export function JobsPage() {
 
               <div className="skill-tags">
                 {item.job.skills.map((skill) => (
-                  <span key={skill} className="skill-tag">{skill}</span>
+                  <span key={skill} className="skill-tag">
+                    {skill}
+                  </span>
                 ))}
               </div>
 
               <div className="jobs-job-card__details">
-                <span><strong>Curso:</strong> {item.job.course ?? "Sem requisito específico"}</span>
-                <span><strong>Disponibilidade:</strong> {item.job.availability ?? "A combinar"}</span>
+                <span>
+                  <strong>Curso:</strong> {item.job.course ?? "Sem requisito específico"}
+                </span>
+                <span>
+                  <strong>Disponibilidade:</strong> {item.job.availability ?? "A combinar"}
+                </span>
               </div>
 
               <div className="jobs-job-card__match-box">
@@ -350,10 +392,19 @@ export function JobsPage() {
                 <button
                   className="primary-button"
                   type="button"
-                  disabled={submittingJobId === item.job.id || Boolean(item.application) || !isAuthenticated || user?.role !== "STUDENT"}
+                  disabled={
+                    submittingJobId === item.job.id ||
+                    Boolean(item.application) ||
+                    !isAuthenticated ||
+                    user?.role !== "STUDENT"
+                  }
                   onClick={() => handleApply(item.job.id)}
                 >
-                  {item.application ? "Candidatura enviada" : submittingJobId === item.job.id ? "Enviando..." : "Candidatar-se com 1 clique"}
+                  {item.application
+                    ? "Candidatura enviada"
+                    : submittingJobId === item.job.id
+                      ? "Enviando..."
+                      : "Candidatar-se com 1 clique"}
                 </button>
               </div>
             </article>

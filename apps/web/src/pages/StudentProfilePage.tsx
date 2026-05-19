@@ -27,8 +27,17 @@ const defaultLocalDetails: StudentLocalDetails = {
   cr: "8.9",
 };
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+}
+
 export function StudentProfilePage() {
-  const { token, user } = useAuth();
+  const { token, user, refreshCurrentUser } = useAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<StudentProfileFormValues | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,6 +74,7 @@ export function StudentProfilePage() {
           skills: profile.skills.join(", "),
           availability: profile.availability,
           portfolio: profile.portfolio ?? "",
+          photoUrl: profile.photoUrl ?? "",
         });
       })
       .catch((loadError) => {
@@ -99,7 +109,9 @@ export function StudentProfilePage() {
         skills: updatedProfile.skills.join(", "),
         availability: updatedProfile.availability,
         portfolio: updatedProfile.portfolio ?? "",
+        photoUrl: updatedProfile.photoUrl ?? "",
       });
+      await refreshCurrentUser();
       setSuccessMessage("Perfil atualizado com sucesso.");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível atualizar o perfil.");
@@ -120,25 +132,27 @@ export function StudentProfilePage() {
     return (
       <div className="profile-layout profile-layout--student profile-layout--refined">
         <div className="profile-main-stack">
-          <section className="panel profile-hero-card profile-hero-card--refined">
-            <div className="profile-hero-card__media">
-              <div className="profile-avatar" aria-hidden="true">
-                <span>
-                  {initialValues.name
-                    .split(" ")
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((part) => part[0]?.toUpperCase())
-                    .join("")}
-                </span>
-              </div>
+          <section className="panel profile-hero-card profile-hero-card--refined profile-hero-card--student-modern">
+            <div className="profile-hero-card__media profile-hero-card__media--student">
+              {initialValues.photoUrl ? (
+                <img
+                  className="profile-avatar profile-avatar--image"
+                  src={initialValues.photoUrl}
+                  alt={`Foto de ${initialValues.name}`}
+                />
+              ) : (
+                <div className="profile-avatar" aria-hidden="true">
+                  <span>{getInitials(initialValues.name)}</span>
+                </div>
+              )}
+
               <div className="profile-hero-card__info">
                 <span className="panel__label">Candidato</span>
-                <h2 className="profile-hero-card__name">{initialValues.name}</h2>
+                <h1 className="profile-hero-card__name">{initialValues.name}</h1>
                 <p className="profile-hero-card__title">{localDetails.title}</p>
                 <div className="profile-meta-chips">
                   <span className="status-pill">Disponível para estágio • {initialValues.availability}</span>
-                  <span className="status-pill status-pill--highlight">Matching Score Geral: 96%</span>
+                  <span className="status-pill status-pill--highlight">Perfil forte para vagas de entrada</span>
                 </div>
               </div>
             </div>
@@ -162,9 +176,8 @@ export function StudentProfilePage() {
             </div>
 
             <div className="profile-hero-card__actions">
-              <button className="secondary-button" type="button">Visualizar Currículo (PDF)</button>
-              <button className="secondary-button" type="button">Editar Perfil</button>
-              <Link className="primary-button" to="/perfil/aluno/candidaturas">Ver Candidaturas</Link>
+              <Link className="primary-button" to="/perfil/aluno/candidaturas">Ver candidaturas</Link>
+              <button className="secondary-button" type="button" onClick={saveLocalDetails}>Salvar resumo extra</button>
             </div>
           </section>
 
@@ -316,18 +329,10 @@ export function StudentProfilePage() {
         </div>
       </div>
     );
-  }, [error, initialValues, isLoading, isSubmitting, localDetails, localSavedMessage, successMessage]);
+  }, [error, initialValues, isLoading, isSubmitting, localDetails, localSavedMessage, successMessage, token]);
 
   return (
     <section className="page-section profile-page student-profile-page student-profile-page--refined">
-      <header className="page-header student-profile-page__header">
-        <div>
-          <span className="page-eyebrow">Meu perfil</span>
-          <h1>Perfil do candidato</h1>
-          <p>Mantenha seu curso, habilidades, disponibilidade e portfólio organizados para aumentar a aderência nas vagas.</p>
-        </div>
-      </header>
-
       {content}
     </section>
   );

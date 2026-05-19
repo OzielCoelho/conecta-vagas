@@ -1,6 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { ApiError } from "../services/api";
-import { loginUser, registerUser, type LoginInput, type RegisterInput } from "../services/auth";
+import {
+  getCurrentUser,
+  loginUser,
+  registerUser,
+  type LoginInput,
+  type RegisterInput,
+} from "../services/auth";
 import { getMyCompanyProfile } from "../services/companies";
 import { getMyStudentProfile } from "../services/students";
 import { clearSession, loadSession, saveSession, type AuthUser } from "./auth-storage";
@@ -24,7 +30,9 @@ type AuthContextValue = {
   startDemo: (mode?: "student" | "company") => void;
   logout: () => void;
   refreshProfileStatus: () => Promise<ProfileStatus>;
+  refreshCurrentUser: () => Promise<AuthUser | null>;
   markProfileComplete: () => void;
+  setUser: (user: AuthUser | null) => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -53,9 +61,31 @@ async function fetchProfileStatus(token: string, user: AuthUser): Promise<Profil
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUserState] = useState<AuthUser | null>(null);
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("unknown");
   const [isBootstrapping, setIsBootstrapping] = useState(true);
+
+  function updateSession(nextToken: string | null, nextUser: AuthUser | null) {
+    setToken(nextToken);
+    setUserState(nextUser);
+
+    if (nextToken && nextUser) {
+      saveSession({ token: nextToken, user: nextUser });
+    } else {
+      clearSession();
+    }
+  }
+
+  async function refreshCurrentUser() {
+    if (!token) {
+      updateSession(null, null);
+      return null;
+    }
+
+    const currentUser = await getCurrentUser(token);
+    updateSession(token, currentUser);
+    return currentUser;
+  }
 
   useEffect(() => {
     const session = loadSession();
@@ -66,16 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setToken(session.token);
-    setUser(session.user);
+    setUserState(session.user);
 
-    fetchProfileStatus(session.token, session.user)
-      .then((status) => {
+    Promise.all([getCurrentUser(session.token), fetchProfileStatus(session.token, session.user)])
+      .then(([currentUser, status]) => {
+        updateSession(session.token, currentUser);
         setProfileStatus(status);
       })
       .catch(() => {
-        clearSession();
-        setToken(null);
-        setUser(null);
+        updateSession(null, null);
         setProfileStatus("unknown");
       })
       .finally(() => {
@@ -96,14 +125,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(data: LoginInput) {
     const session = await loginUser(data);
-    saveSession(session);
-    setToken(session.token);
-    setUser(session.user);
-    const status = await fetchProfileStatus(session.token, session.user);
+    const currentUser = await getCurrentUser(session.token);
+    updateSession(session.token, currentUser);
+    const status = await fetchProfileStatus(session.token, currentUser);
     setProfileStatus(status);
 
     return {
-      user: session.user,
+      user: currentUser,
       profileStatus: status,
     };
   }
@@ -114,21 +142,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function startDemo() {
-    clearSession();
-    setToken(null);
-    setUser(null);
+    updateSession(null, null);
     setProfileStatus("unknown");
   }
 
   function logout() {
-    clearSession();
-    setToken(null);
-    setUser(null);
+    updateSession(null, null);
     setProfileStatus("unknown");
   }
 
   function markProfileComplete() {
     setProfileStatus("complete");
+  }
+
+  function setUser(nextUser: AuthUser | null) {
+    updateSession(token, nextUser);
   }
 
   const value = useMemo<AuthContextValue>(
@@ -144,7 +172,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       startDemo,
       logout,
       refreshProfileStatus,
+      refreshCurrentUser,
       markProfileComplete,
+      setUser,
     }),
     [token, user, isBootstrapping, profileStatus]
   );

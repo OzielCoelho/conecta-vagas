@@ -32,7 +32,7 @@ export class ApplicationController {
   async getByJob(request: FastifyRequest, reply: FastifyReply) {
     const { jobId } = request.params as { jobId: string };
 
-    const applications = await applicationService.findByJobId(jobId);
+    const applications = await applicationService.findByJobId(jobId, request.user.id, request.user.role);
 
     return reply.send(applications);
   }
@@ -55,7 +55,7 @@ export class ApplicationController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateApplicationStatusDTO;
 
-    const application = await applicationService.updateStatus(id, data, request.user.id);
+    const application = await applicationService.updateStatus(id, data, request.user.id, request.user.role);
 
     return reply.send(application);
   }

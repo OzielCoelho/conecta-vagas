@@ -4,6 +4,7 @@ export interface CreateStudentDTO {
   skills: string[];
   availability: string;
   portfolio?: string;
+  photoUrl?: string;
   userId: string;
 }
 
@@ -13,5 +14,6 @@ export interface UpdateStudentDTO {
   skills?: string[];
   availability?: string;
   portfolio?: string;
+  photoUrl?: string;
   isVisible?: boolean;
 }

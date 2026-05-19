@@ -95,7 +95,13 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
 
             <label className="field">
               <span>Senha</span>
-              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                minLength={6}
+                required
+              />
             </label>
 
             <label className="field register-form__field--full">
@@ -108,6 +114,8 @@ export function RegisterForm({ onSwitchToLogin }: RegisterFormProps) {
               />
             </label>
           </div>
+
+          <p className="register-form__hint">A senha deve ter pelo menos 6 caracteres.</p>
 
           {error ? <p className="form-error">{error}</p> : null}
 

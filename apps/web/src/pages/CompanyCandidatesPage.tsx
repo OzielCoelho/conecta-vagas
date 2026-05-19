@@ -8,7 +8,7 @@ import {
   type ApplicationStatus,
   type CompanyApplication,
 } from "../services/applications";
-import { getJobs, type JobItem } from "../services/jobs";
+import { getMyCompanyJobs, type JobItem } from "../services/jobs";
 
 const candidateStageOrder: ApplicationStatus[] = [
   "SENT",
@@ -38,10 +38,16 @@ export function CompanyCandidatesPage() {
 
     setIsLoading(true);
 
-    getJobs(token)
+    const loadJobs = user.role === "COMPANY" ? getMyCompanyJobs(token) : Promise.resolve([] as JobItem[]);
+
+    loadJobs
       .then((response) => {
         setJobs(response);
         setSelectedJobId(response[0]?.id ?? "");
+      })
+      .catch(() => {
+        setJobs([]);
+        setSelectedJobId("");
       })
       .finally(() => {
         setIsLoading(false);
@@ -102,24 +108,23 @@ export function CompanyCandidatesPage() {
     [applications]
   );
 
-  async function handleAdvance(application: CompanyApplication) {
+  function getNextStatus(status: ApplicationStatus) {
+    const currentIndex = candidateStageOrder.indexOf(status);
+    return candidateStageOrder[Math.min(currentIndex + 1, candidateStageOrder.length - 1)];
+  }
+
+  async function handleStatusUpdate(application: CompanyApplication, nextStatus: ApplicationStatus) {
     if (!token) {
       return;
     }
 
-    const currentIndex = candidateStageOrder.indexOf(application.status);
-    const nextStatus = candidateStageOrder[Math.min(currentIndex + 1, candidateStageOrder.length - 1)];
-
-    if (!nextStatus || nextStatus === application.status) {
-      return;
-    }
-
     setIsUpdating(application.id);
+    setFeedbackMessage(null);
 
     try {
       await updateApplicationStatus(application.id, nextStatus, token);
       setApplications((current) => current.map((item) => (item.id === application.id ? { ...item, status: nextStatus } : item)));
-      setFeedbackMessage(`Etapa atualizada para ${getApplicationStatusLabel(nextStatus)}.`);
+      setFeedbackMessage(`Status atualizado para ${getApplicationStatusLabel(nextStatus)}.`);
     } catch (error) {
       setFeedbackMessage(error instanceof Error ? error.message : "Não foi possível atualizar a candidatura.");
     } finally {
@@ -147,7 +152,7 @@ export function CompanyCandidatesPage() {
         <div>
           <span className="page-eyebrow">Área da empresa</span>
           <h1>Solicitações de candidatos</h1>
-          <p>Visualize os candidatos recebidos, acompanhe o pipeline e priorize os perfis com maior aderência.</p>
+          <p>Visualize os candidatos inscritos nas suas vagas e decida quem avança ou é recusado.</p>
         </div>
       </header>
 
@@ -187,48 +192,73 @@ export function CompanyCandidatesPage() {
 
           {feedbackMessage ? <p className="form-success company-candidates-board__feedback">{feedbackMessage}</p> : null}
 
+          {!jobs.length ? <p>Você ainda não possui vagas cadastradas.</p> : null}
+
           <div className="company-candidate-list company-candidate-list--refined">
-            {filteredApplications.length ? filteredApplications.map((application, index) => (
-              <article
-                key={application.id}
-                className={selectedApplication?.id === application.id ? "company-candidate-card company-candidate-card--refined company-candidate-card--active" : "company-candidate-card company-candidate-card--refined"}
-              >
-                <div className="company-candidate-card__main">
-                  <span className="company-candidate-card__avatar" aria-hidden="true">
-                    {application.student.name
-                      .split(" ")
-                      .map((part) => part[0])
-                      .join("")
-                      .slice(0, 2)}
-                  </span>
-                  <div>
-                    <span className="panel__label">Top {index + 1}</span>
-                    <strong>{application.student.name}</strong>
-                    <p>{application.student.course}</p>
-                    <span>{application.student.availability}</span>
-                  </div>
-                </div>
+            {filteredApplications.length ? filteredApplications.map((application, index) => {
+              const nextStatus = getNextStatus(application.status);
+              const canAdvance = application.status !== "APPROVED" && application.status !== "REJECTED" && nextStatus !== application.status;
+              const canReject = application.status !== "APPROVED" && application.status !== "REJECTED";
 
-                <div className="company-candidate-card__fit company-candidate-card__fit--refined">
-                  <strong>{application.score}%</strong>
-                  <span>{getApplicationStatusLabel(application.status)}</span>
-                </div>
-
-                <div className="company-candidate-card__meta">
-                  <span className={`status-pill status-pill--${getApplicationStatusTone(application.status)}`}>
-                    {getApplicationStatusLabel(application.status)}
-                  </span>
-                  <div className="company-candidate-card__actions">
-                    <button className="secondary-button" type="button" onClick={() => setSelectedApplicationId(application.id)}>
-                      Ver perfil
-                    </button>
-                    <button className="primary-button" type="button" disabled={isUpdating === application.id} onClick={() => void handleAdvance(application)}>
-                      {isUpdating === application.id ? "Atualizando..." : "Avançar"}
-                    </button>
+              return (
+                <article
+                  key={application.id}
+                  className={selectedApplication?.id === application.id ? "company-candidate-card company-candidate-card--refined company-candidate-card--active" : "company-candidate-card company-candidate-card--refined"}
+                >
+                  <div className="company-candidate-card__main">
+                    <span className="company-candidate-card__avatar" aria-hidden="true">
+                      {application.student.name
+                        .split(" ")
+                        .map((part) => part[0])
+                        .join("")
+                        .slice(0, 2)}
+                    </span>
+                    <div>
+                      <span className="panel__label">Top {index + 1}</span>
+                      <strong>{application.student.name}</strong>
+                      <p>{application.student.course}</p>
+                      <span>{application.student.availability}</span>
+                    </div>
                   </div>
-                </div>
-              </article>
-            )) : (
+
+                  <div className="company-candidate-card__fit company-candidate-card__fit--refined">
+                    <strong>{application.score}%</strong>
+                    <span>{getApplicationStatusLabel(application.status)}</span>
+                  </div>
+
+                  <div className="company-candidate-card__meta">
+                    <span className={`status-pill status-pill--${getApplicationStatusTone(application.status)}`}>
+                      {getApplicationStatusLabel(application.status)}
+                    </span>
+                    <div className="company-candidate-card__actions">
+                      <button className="secondary-button" type="button" onClick={() => setSelectedApplicationId(application.id)}>
+                        Ver perfil
+                      </button>
+                      {canReject ? (
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          disabled={isUpdating === application.id}
+                          onClick={() => void handleStatusUpdate(application, "REJECTED")}
+                        >
+                          {isUpdating === application.id ? "Atualizando..." : "Recusar"}
+                        </button>
+                      ) : null}
+                      {canAdvance ? (
+                        <button
+                          className="primary-button"
+                          type="button"
+                          disabled={isUpdating === application.id}
+                          onClick={() => void handleStatusUpdate(application, nextStatus)}
+                        >
+                          {isUpdating === application.id ? "Atualizando..." : nextStatus === "APPROVED" ? "Aceitar" : "Avançar"}
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </article>
+              );
+            }) : (
               <p>Nenhuma candidatura encontrada para a vaga selecionada.</p>
             )}
           </div>

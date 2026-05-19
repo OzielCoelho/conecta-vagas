@@ -23,6 +23,15 @@ const dashboardItem: SidebarMenuItem = {
 const studentMenuItems: SidebarMenuItem[] = [
   dashboardItem,
   {
+    to: "/feed",
+    label: "Feed",
+    icon: (
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M5 5.5h14A1.5 1.5 0 0 1 20.5 7v10A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Zm2 2v2h10v-2Zm0 4v5h6v-5Z" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
     to: "/vagas",
     label: "Vagas",
     icon: (
@@ -40,22 +49,22 @@ const studentMenuItems: SidebarMenuItem[] = [
       </svg>
     ),
   },
-  {
-    to: "/configuracoes",
-    label: "Configurações",
-    icon: (
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="m19.4 13-.1.3 1.4 1.6-1.5 2.6-2-.4-.2.2-.4 2h-3l-.4-2-.3-.1-1.7 1-2.6-1.5.4-2-.2-.2-2-.4v-3l2-.4.1-.3-1-1.7L9.9 5l2 .4.2-.2.4-2h3l.4 2 .3.1 1.7-1L20.5 6l-.4 2 .2.2 2 .4V13ZM12 9a3 3 0 1 0 3 3 3 3 0 0 0-3-3Z" fill="currentColor" />
-      </svg>
-    ),
-  },
 ];
 
 const companyMenuItems: SidebarMenuItem[] = [
   dashboardItem,
   {
-    to: "/vagas",
-    label: "Vagas",
+    to: "/feed",
+    label: "Feed",
+    icon: (
+      <svg viewBox="0 0 24 24" focusable="false">
+        <path d="M5 5.5h14A1.5 1.5 0 0 1 20.5 7v10A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Zm2 2v2h10v-2Zm0 4v5h6v-5Z" fill="currentColor" />
+      </svg>
+    ),
+  },
+  {
+    to: "/empresa/vagas",
+    label: "Minhas vagas",
     icon: (
       <svg viewBox="0 0 24 24" focusable="false">
         <path d="M9 6V4.5h6V6h4A1.5 1.5 0 0 1 20.5 7.5v10A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 5 6Zm1.5 0h3V6h-3Zm-5 4v7.5H19V10Z" fill="currentColor" />
@@ -63,20 +72,11 @@ const companyMenuItems: SidebarMenuItem[] = [
     ),
   },
   {
-    to: "/alunos",
+    to: "/empresa/candidatos",
     label: "Candidatos",
     icon: (
       <svg viewBox="0 0 24 24" focusable="false">
         <path d="M12 5a3.5 3.5 0 1 1-3.5 3.5A3.5 3.5 0 0 1 12 5Zm0 9c4 0 7 2.1 7 4.5V20H5v-1.5C5 16.1 8 14 12 14Z" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
-    to: "/configuracoes",
-    label: "Configurações",
-    icon: (
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="m19.4 13-.1.3 1.4 1.6-1.5 2.6-2-.4-.2.2-.4 2h-3l-.4-2-.3-.1-1.7 1-2.6-1.5.4-2-.2-.2-2-.4v-3l2-.4.1-.3-1-1.7L9.9 5l2 .4.2-.2.4-2h3l.4 2 .3.1 1.7-1L20.5 6l-.4 2 .2.2 2 .4V13ZM12 9a3 3 0 1 0 3 3 3 3 0 0 0-3-3Z" fill="currentColor" />
       </svg>
     ),
   },
@@ -92,19 +92,6 @@ export function Sidebar() {
       : user?.role === "COMPANY"
         ? { to: "/perfil/empresa", label: "Meu perfil" }
         : null;
-
-  const companyCandidatesItem =
-    user?.role === "COMPANY"
-      ? {
-          to: "/empresa/candidatos",
-          label: "Candidatos",
-          icon: (
-            <svg viewBox="0 0 24 24" focusable="false">
-              <path d="M12 5a3.5 3.5 0 1 1-3.5 3.5A3.5 3.5 0 0 1 12 5Zm-6 13c0-2.21 2.67-4 6-4s6 1.79 6 4v1H6Zm12.5-6.5A2.5 2.5 0 1 0 16 9a2.5 2.5 0 0 0 2.5 2.5ZM19 14c-1.06 0-2.04.21-2.87.57A5.33 5.33 0 0 1 20 19v1h2v-1c0-2.21-1.34-5-3-5Z" fill="currentColor" />
-            </svg>
-          ),
-        }
-      : null;
 
   const menuItems = user?.role === "COMPANY" ? companyMenuItems : studentMenuItems;
 
@@ -143,19 +130,6 @@ export function Sidebar() {
                 </svg>
               </span>
               <span>{profileItem.label}</span>
-            </NavLink>
-          ) : null}
-
-          {companyCandidatesItem ? (
-            <NavLink
-              key={companyCandidatesItem.to}
-              to={companyCandidatesItem.to}
-              className={({ isActive }) =>
-                isActive ? "sidebar__link sidebar__link--active" : "sidebar__link"
-              }
-            >
-              <span className="sidebar__link-icon" aria-hidden="true">{companyCandidatesItem.icon}</span>
-              <span>{companyCandidatesItem.label}</span>
             </NavLink>
           ) : null}
 

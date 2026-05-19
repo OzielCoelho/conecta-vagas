@@ -7,6 +7,7 @@ export type StudentProfileFormValues = {
   skills: string;
   availability: string;
   portfolio: string;
+  photoUrl: string;
 };
 
 type StudentProfileFormProps = {
@@ -23,6 +24,7 @@ const defaultValues: StudentProfileFormValues = {
   skills: "",
   availability: "",
   portfolio: "",
+  photoUrl: "",
 };
 
 export function StudentProfileForm({
@@ -38,6 +40,7 @@ export function StudentProfileForm({
   const [skills, setSkills] = useState(values.skills);
   const [availability, setAvailability] = useState(values.availability);
   const [portfolio, setPortfolio] = useState(values.portfolio);
+  const [photoUrl, setPhotoUrl] = useState(values.photoUrl);
 
   useEffect(() => {
     setName(values.name);
@@ -45,6 +48,7 @@ export function StudentProfileForm({
     setSkills(values.skills);
     setAvailability(values.availability);
     setPortfolio(values.portfolio);
+    setPhotoUrl(values.photoUrl);
   }, [values]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -59,6 +63,7 @@ export function StudentProfileForm({
         .filter(Boolean),
       availability,
       portfolio: portfolio || undefined,
+      photoUrl: photoUrl || undefined,
     });
   }
 
@@ -90,6 +95,16 @@ export function StudentProfileForm({
           <input value={availability} onChange={(event) => setAvailability(event.target.value)} required />
         </label>
       </div>
+
+      <label className="field profile-form__field--full">
+        <span>Foto por URL</span>
+        <input
+          type="url"
+          value={photoUrl}
+          onChange={(event) => setPhotoUrl(event.target.value)}
+          placeholder="https://images.unsplash.com/..."
+        />
+      </label>
 
       <label className="field profile-form__field--full">
         <span>Portfólio / link</span>

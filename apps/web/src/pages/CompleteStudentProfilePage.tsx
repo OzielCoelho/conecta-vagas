@@ -5,7 +5,7 @@ import { StudentProfileForm } from "../components/profile/StudentProfileForm";
 import { createStudentProfile } from "../services/students";
 
 export function CompleteStudentProfilePage() {
-  const { token, markProfileComplete } = useAuth();
+  const { token, markProfileComplete, refreshCurrentUser } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,8 +21,9 @@ export function CompleteStudentProfilePage() {
 
     try {
       await createStudentProfile(data, token);
+      await refreshCurrentUser();
       markProfileComplete();
-      navigate("/", { replace: true });
+      navigate("/perfil/aluno", { replace: true });
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível salvar o perfil.");
     } finally {
@@ -36,7 +37,7 @@ export function CompleteStudentProfilePage() {
         <aside className="complete-profile-layout__aside complete-profile-layout__aside--student">
           <span className="page-eyebrow">Perfil de candidato</span>
           <h1>Complete seu perfil para começar sua jornada.</h1>
-          <p>Adicione suas informações básicas, habilidades e disponibilidade para receber vagas com maior aderência.</p>
+          <p>Adicione suas informações básicas, habilidades, foto e disponibilidade para receber vagas com maior aderência.</p>
           <div className="complete-profile-layout__features">
             <div className="complete-profile-layout__feature-item">
               <strong>Matching mais preciso</strong>
@@ -44,7 +45,7 @@ export function CompleteStudentProfilePage() {
             </div>
             <div className="complete-profile-layout__feature-item">
               <strong>Visibilidade profissional</strong>
-              <span>Empresas enxergam seu curso, skills e disponibilidade com clareza.</span>
+              <span>Empresas enxergam seu curso, skills, foto e disponibilidade com clareza.</span>
             </div>
             <div className="complete-profile-layout__feature-item">
               <strong>Acompanhamento centralizado</strong>

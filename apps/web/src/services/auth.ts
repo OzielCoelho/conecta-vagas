@@ -1,4 +1,4 @@
-import { apiPost } from "./api";
+import { apiGet, apiPatch, apiPost } from "./api";
 import type { AuthUser } from "../auth/auth-storage";
 
 export type LoginInput = {
@@ -10,6 +10,15 @@ export type RegisterInput = {
   email: string;
   password: string;
   role: "STUDENT" | "COMPANY";
+};
+
+export type UpdateAccountInput = {
+  email: string;
+};
+
+export type UpdatePasswordInput = {
+  currentPassword: string;
+  newPassword: string;
 };
 
 type LoginResponse = {
@@ -29,4 +38,16 @@ export function loginUser(data: LoginInput) {
 
 export function registerUser(data: RegisterInput) {
   return apiPost<RegisterResponse>("/users/register", data);
+}
+
+export function getCurrentUser(token: string) {
+  return apiGet<AuthUser>("/users/me", token);
+}
+
+export function updateCurrentUser(data: UpdateAccountInput, token: string) {
+  return apiPatch<AuthUser>("/users/me", data, token);
+}
+
+export function updateCurrentUserPassword(data: UpdatePasswordInput, token: string) {
+  return apiPatch<void>("/users/password", data, token);
 }

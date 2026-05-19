@@ -7,6 +7,7 @@ export type StudentProfile = {
   skills: string[];
   availability: string;
   portfolio?: string | null;
+  photoUrl?: string | null;
   isVisible?: boolean;
 };
 
@@ -16,6 +17,7 @@ export type CreateStudentProfileInput = {
   skills: string[];
   availability: string;
   portfolio?: string;
+  photoUrl?: string;
 };
 
 export function getMyStudentProfile(token: string) {

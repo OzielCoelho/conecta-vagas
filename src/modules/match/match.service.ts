@@ -11,10 +11,12 @@ export class MatchService {
   ): number {
     let score = 0;
 
-    const matchedSkills = studentSkills.filter((skill) =>
-      jobSkills.map((s) => s.toLowerCase()).includes(skill.toLowerCase())
-    );
-    score += (matchedSkills.length / jobSkills.length) * 60;
+    const normalizedJobSkills = jobSkills.map((skill) => skill.toLowerCase());
+    const matchedSkills = studentSkills.filter((skill) => normalizedJobSkills.includes(skill.toLowerCase()));
+
+    if (jobSkills.length > 0) {
+      score += (matchedSkills.length / jobSkills.length) * 60;
+    }
 
     if (jobCourse && studentCourse.toLowerCase() === jobCourse.toLowerCase()) {
       score += 25;
@@ -92,5 +94,4 @@ export class MatchService {
       orderBy: { score: "desc" },
     });
   }
-  
 }
