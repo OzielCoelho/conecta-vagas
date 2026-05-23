@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 function getProfileRoute(role: string) {
   if (role === "STUDENT") return "/completar-perfil/aluno";
   if (role === "COMPANY") return "/completar-perfil/empresa";
-  return "/";
+  return "/dashboard";
 }
 
 export function ProtectedRoute() {

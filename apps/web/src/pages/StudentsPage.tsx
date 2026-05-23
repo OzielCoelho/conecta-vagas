@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
-import { getStudents, type StudentProfile } from "../services/students";
+import { formatAvailabilityList, getStudents, type StudentProfile } from "../services/students";
 
 export function StudentsPage() {
   const { token, user } = useAuth();
@@ -93,7 +93,7 @@ export function StudentsPage() {
             <article key={student.id} className="panel students-page__directory-card">
               <span className="panel__label">{student.course}</span>
               <strong>{student.name}</strong>
-              <p>{student.availability}</p>
+              <p>{formatAvailabilityList(student.availability)}</p>
             </article>
           ))}
         </section>

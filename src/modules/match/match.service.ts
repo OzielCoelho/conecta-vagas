@@ -4,7 +4,7 @@ export class MatchService {
   calculateScore(
     studentSkills: string[],
     studentCourse: string,
-    studentAvailability: string,
+    studentAvailability: string[],
     jobSkills: string[],
     jobCourse: string | null,
     jobAvailability: string | null
@@ -22,7 +22,10 @@ export class MatchService {
       score += 25;
     }
 
-    if (jobAvailability && studentAvailability.toLowerCase() === jobAvailability.toLowerCase()) {
+    if (
+      jobAvailability &&
+      studentAvailability.some((availability) => availability.toLowerCase() === jobAvailability.toLowerCase())
+    ) {
       score += 15;
     }
 

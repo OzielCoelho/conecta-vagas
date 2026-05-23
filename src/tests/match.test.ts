@@ -8,10 +8,10 @@ describe("MatchService - calculateScore", () => {
     const score = matchService.calculateScore(
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Informática",
-      "Manhã",
+      ["MANHA"],
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Informática",
-      "Manhã"
+      "MANHA"
     );
 
     expect(score).toBe(100);
@@ -21,10 +21,10 @@ describe("MatchService - calculateScore", () => {
     const score = matchService.calculateScore(
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Redes",
-      "Tarde",
+      ["TARDE"],
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Informática",
-      "Manhã"
+      "MANHA"
     );
 
     expect(score).toBe(60);
@@ -34,10 +34,10 @@ describe("MatchService - calculateScore", () => {
     const score = matchService.calculateScore(
       ["Python", "Django"],
       "Técnico em Redes",
-      "Tarde",
+      ["TARDE"],
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Informática",
-      "Manhã"
+      "MANHA"
     );
 
     expect(score).toBe(0);
@@ -47,10 +47,10 @@ describe("MatchService - calculateScore", () => {
     const score = matchService.calculateScore(
       ["Node.js", "JavaScript"],
       "Técnico em Informática",
-      "Tarde",
+      ["TARDE"],
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Informática",
-      "Manhã"
+      "MANHA"
     );
 
     expect(score).toBe(65);
@@ -60,10 +60,10 @@ describe("MatchService - calculateScore", () => {
     const score = matchService.calculateScore(
       ["node.js", "javascript", "sql"],
       "Técnico em Informática",
-      "Manhã",
+      ["MANHA"],
       ["Node.js", "JavaScript", "SQL"],
       "Técnico em Informática",
-      "Manhã"
+      "MANHA"
     );
 
     expect(score).toBe(100);

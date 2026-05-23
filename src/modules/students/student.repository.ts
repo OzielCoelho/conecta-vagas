@@ -23,6 +23,7 @@ export class StudentRepository {
   async findAll() {
     return prisma.student.findMany({
       where: { isVisible: true },
+      orderBy: { updatedAt: "desc" },
     });
   }
 

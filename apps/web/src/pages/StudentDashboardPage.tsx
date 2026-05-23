@@ -157,7 +157,7 @@ export function StudentDashboardPage() {
           <div className="student-profile-cta-card__tags">
             <span className="skill-tag">Skills atualizadas</span>
             <span className="skill-tag">Curso validado</span>
-            <span className="skill-tag">Disponibilidade pronta</span>
+            <span className="skill-tag">Disponibilidade alinhada</span>
           </div>
         </article>
       </section>

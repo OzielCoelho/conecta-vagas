@@ -7,6 +7,7 @@ import { CompleteCompanyProfilePage } from "../pages/CompleteCompanyProfilePage"
 import { CompleteStudentProfilePage } from "../pages/CompleteStudentProfilePage";
 import { DashboardPage } from "../pages/DashboardPage";
 import { FeedPage } from "../pages/FeedPage";
+import { HomePage } from "../pages/HomePage";
 import { JobsPage } from "../pages/JobsPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import { StudentApplicationsPage } from "../pages/StudentApplicationsPage";
@@ -15,17 +16,17 @@ import { StudentsPage } from "../pages/StudentsPage";
 import { ProtectedRoute } from "../routes/ProtectedRoute";
 
 export const router = createBrowserRouter([
+  { path: "/", element: <HomePage /> },
   {
-    path: "/",
     element: <AppShell />,
     children: [
-      { index: true, element: <DashboardPage /> },
       { path: "feed", element: <FeedPage /> },
       { path: "vagas", element: <JobsPage /> },
       { path: "alunos", element: <StudentsPage /> },
       {
         element: <ProtectedRoute />,
         children: [
+          { path: "dashboard", element: <DashboardPage /> },
           { path: "perfil/aluno", element: <StudentProfilePage /> },
           { path: "perfil/aluno/candidaturas", element: <StudentApplicationsPage /> },
           { path: "perfil/empresa", element: <CompanyProfilePage /> },

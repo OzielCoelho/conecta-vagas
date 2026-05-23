@@ -63,7 +63,14 @@ model Student {
   name         String
   course       String
   skills       String[]
-  availability String
+  availability String[]
+  headline     String?
+  summary      String?
+  city         String?
+  state        String?
+  semester     String?
+  university   String?
+  cr           String?
   portfolio    String?
   photoUrl     String?
   isVisible    Boolean  @default(true)
@@ -77,16 +84,22 @@ model Student {
 }
 
 model Company {
-  id        String   @id @default(uuid())
-  name      String
-  about     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String
+  about              String?
+  logoUrl            String?
+  commercialPhone    String?
+  legalName          String?
+  tradeName          String?
+  cultureDescription String?
+  businessSector     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
 
-  jobs      Job[]
+  jobs               Job[]
 }
 
 model Job {

@@ -16,7 +16,10 @@ if (!jwtSecret) {
   throw new Error("JWT_SECRET não configurado.");
 }
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: true,
+  bodyLimit: 4 * 1024 * 1024,
+});
 
 app.register(fastifyCors, { origin: true });
 app.register(fastifyJwt, {
@@ -39,6 +42,15 @@ function isValidationError(error: unknown): error is Error & { validation: unkno
   );
 }
 
+function isBodyTooLargeError(error: unknown): error is Error & { code: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "FST_ERR_CTP_BODY_TOO_LARGE"
+  );
+}
+
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {
     return reply.status(error.statusCode).send({ message: error.message });
@@ -46,6 +58,10 @@ app.setErrorHandler((error, request, reply) => {
 
   if (isValidationError(error) && error.validation.length > 0) {
     return reply.status(400).send({ message: error.message });
+  }
+
+  if (isBodyTooLargeError(error)) {
+    return reply.status(413).send({ message: "A imagem enviada é muito grande. Tente uma imagem menor." });
   }
 
   app.log.error(error);

@@ -13,7 +13,21 @@ const registerSchema = {
       email: { type: "string", format: "email", minLength: 3, maxLength: 255 },
       password: { type: "string", minLength: 6, maxLength: 72 },
       role: { type: "string", enum: ["STUDENT", "COMPANY"] },
+      firstName: { type: "string", minLength: 1, maxLength: 80 },
+      lastName: { type: "string", minLength: 1, maxLength: 80 },
     },
+    allOf: [
+      {
+        if: {
+          properties: {
+            role: { const: "STUDENT" },
+          },
+        },
+        then: {
+          required: ["firstName", "lastName"],
+        },
+      },
+    ],
   },
 } as const;
 

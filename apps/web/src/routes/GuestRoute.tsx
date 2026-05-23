@@ -7,7 +7,7 @@ function getDestination(role?: string, profileStatus?: string) {
     if (role === "COMPANY") return "/completar-perfil/empresa";
   }
 
-  return "/";
+  return "/dashboard";
 }
 
 export function GuestRoute() {

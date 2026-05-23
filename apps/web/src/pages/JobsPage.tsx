@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { getStoredDemoJobs } from "../demo/demo-storage";
@@ -12,11 +12,19 @@ import {
 import {
   buildMatchJustification,
   estimateJobMatch,
+  getAvailabilityLabel,
   getJobModelLabel,
   getJobs,
   type JobItem,
 } from "../services/jobs";
 import { getMyStudentProfile, type StudentProfile } from "../services/students";
+import heroStageImage from "../imagens/estagios.png";
+import powerImage from "../imagens/The-power-of-networking-640x333.webp";
+import basesImage from "../imagens/bases.jpg";
+import socialImage from "../imagens/6962d64ca6e66b24ac58011a_tipos-empresas-1200_og-2.jpeg";
+import networkingImage from "../imagens/importancia-do-networking-1024x683.png";
+import slideImage from "../imagens/slide_32.png";
+import showcaseImage from "../imagens/Captura de tela 2026-05-18 205107.png";
 
 type MatchBand = "all" | "90" | "80" | "70";
 type ModelFilter = "all" | "REMOTE" | "HYBRID" | "IN_PERSON";
@@ -28,7 +36,27 @@ type JobViewModel = {
   score: number;
   scoreLabel: string;
   justification: string;
+  heroImage: string;
 };
+
+const jobImages = [heroStageImage, slideImage, networkingImage, powerImage, basesImage, socialImage, showcaseImage];
+
+function selectJobImage(seed: string) {
+  const total = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return jobImages[total % jobImages.length];
+}
+
+function getScoreTone(score: number): "green" | "amber" | "red" {
+  if (score >= 80) return "green";
+  if (score >= 50) return "amber";
+  return "red";
+}
+
+function getScoreLabel(score: number) {
+  if (score >= 80) return "Alta compatibilidade";
+  if (score >= 50) return "Média compatibilidade";
+  return "Baixa compatibilidade";
+}
 
 function mergeWithDemoJobs(realJobs: JobItem[]) {
   const demoJobs = getStoredDemoJobs() as JobItem[];
@@ -54,6 +82,7 @@ export function JobsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submittingJobId, setSubmittingJobId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -116,6 +145,7 @@ export function JobsPage() {
         score,
         scoreLabel,
         justification,
+        heroImage: selectJobImage(job.id),
       };
     });
   }, [applications, jobs, studentProfile]);
@@ -150,6 +180,25 @@ export function JobsPage() {
   }, [jobsView, matchBand, modelFilter, onlyMyApplications, query, statusFilter]);
 
   const topMatches = filteredJobs.slice(0, 3);
+  const selectedJob = useMemo(
+    () => jobsView.find((item) => item.job.id === selectedJobId) ?? null,
+    [jobsView, selectedJobId]
+  );
+
+  function openJobDetails(jobId: string) {
+    setSelectedJobId(jobId);
+  }
+
+  function closeJobDetails() {
+    setSelectedJobId(null);
+  }
+
+  function handleJobSurfaceKeyDown(event: KeyboardEvent<HTMLDivElement>, jobId: string) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openJobDetails(jobId);
+    }
+  }
 
   async function handleApply(jobId: string) {
     if (!token) {
@@ -223,7 +272,7 @@ export function JobsPage() {
             <span className="panel__label">Compatibilidade ativa</span>
             <h2>O ranking considera suas skills, curso e disponibilidade.</h2>
             <p>
-              {studentProfile.skills.slice(0, 3).join(" • ")} • {studentProfile.course}
+              {studentProfile.skills.slice(0, 3).join(" • ")} • {studentProfile.course} • {studentProfile.availability.length ? studentProfile.availability.join(" • ") : "Disponibilidade pendente"}
             </p>
           </div>
           <span className="status-pill status-pill--highlight">Matching em tempo real</span>
@@ -337,80 +386,200 @@ export function JobsPage() {
         </section>
       ) : (
         <section className="jobs-card-grid">
-          {filteredJobs.map((item) => (
-            <article key={item.job.id} className="panel jobs-job-card">
-              <div className="jobs-job-card__top">
-                <div>
-                  <span className="panel__label">{item.job.company?.name ?? "Empresa parceira"}</span>
-                  <h2>{item.job.title}</h2>
-                  <p className="jobs-job-card__meta">
-                    <span className="jobs-job-card__meta-item">{getJobModelLabel(item.job.model)}</span>
-                    <span className="jobs-job-card__meta-item">{item.job.location ?? "Local flexível"}</span>
-                  </p>
-                </div>
+          {filteredJobs.map((item) => {
+            const scoreTone = getScoreTone(item.score);
+            const scoreDescription = getScoreLabel(item.score);
 
-                <div className="jobs-job-card__score">
-                  <strong>{item.score}%</strong>
-                  <span>{item.application ? "Score real" : studentProfile ? "Estimado" : "Indisponível"}</span>
-                </div>
-              </div>
-
-              <p>{item.job.description}</p>
-
-              <div className="skill-tags">
-                {item.job.skills.map((skill) => (
-                  <span key={skill} className="skill-tag">
-                    {skill}
-                  </span>
-                ))}
-              </div>
-
-              <div className="jobs-job-card__details">
-                <span>
-                  <strong>Curso:</strong> {item.job.course ?? "Sem requisito específico"}
-                </span>
-                <span>
-                  <strong>Disponibilidade:</strong> {item.job.availability ?? "A combinar"}
-                </span>
-              </div>
-
-              <div className="jobs-job-card__match-box">
-                <span className="panel__label">Por que combina com você</span>
-                <div className="progress-bar progress-bar--animated">
-                  <span className="progress-bar__fill" style={{ width: `${item.score}%` }} />
-                </div>
-                <p>{item.justification}</p>
-              </div>
-
-              <div className="jobs-job-card__footer">
-                {item.application ? (
-                  <span className={`status-pill status-pill--${getApplicationStatusTone(item.application.status)}`}>
-                    {getApplicationStatusLabel(item.application.status)}
-                  </span>
-                ) : null}
-
-                <button
-                  className="primary-button"
-                  type="button"
-                  disabled={
-                    submittingJobId === item.job.id ||
-                    Boolean(item.application) ||
-                    !isAuthenticated ||
-                    user?.role !== "STUDENT"
-                  }
-                  onClick={() => handleApply(item.job.id)}
+            return (
+              <article key={item.job.id} className={`panel jobs-job-card jobs-job-card--interactive jobs-job-card--${scoreTone}`}>
+                <div
+                  className="jobs-job-card__surface"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Ver detalhes da vaga ${item.job.title}`}
+                  onClick={() => openJobDetails(item.job.id)}
+                  onKeyDown={(event) => handleJobSurfaceKeyDown(event, item.job.id)}
                 >
-                  {item.application
-                    ? "Candidatura enviada"
-                    : submittingJobId === item.job.id
-                      ? "Enviando..."
-                      : "Candidatar-se com 1 clique"}
-                </button>
-              </div>
-            </article>
-          ))}
+                  <div className="jobs-job-card__media">
+                    <img src={item.heroImage} alt={item.job.title} loading="lazy" />
+                    <span className={`status-pill status-pill--${scoreTone}`}>{scoreDescription}</span>
+                  </div>
+
+                  <div className="jobs-job-card__top">
+                    <div>
+                      <span className="panel__label">{item.job.company?.name ?? "Empresa parceira"}</span>
+                      <h2>{item.job.title}</h2>
+                      <p className="jobs-job-card__meta">
+                        <span className="jobs-job-card__meta-item">{getJobModelLabel(item.job.model)}</span>
+                        <span className="jobs-job-card__meta-item">{item.job.location ?? "Local flexível"}</span>
+                      </p>
+                    </div>
+
+                    <div className={`jobs-job-card__score jobs-job-card__score--${scoreTone}`}>
+                      <strong>{item.score}%</strong>
+                      <span>{item.application ? "Score real" : studentProfile ? "Estimado" : "Indisponível"}</span>
+                    </div>
+                  </div>
+
+                  <p>{item.job.description}</p>
+
+                  <div className="skill-tags">
+                    {item.job.skills.map((skill) => (
+                      <span key={skill} className="skill-tag">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="jobs-job-card__details">
+                    <span>
+                      <strong>Curso:</strong> {item.job.course ?? "Sem requisito específico"}
+                    </span>
+                    <span>
+                      <strong>Disponibilidade:</strong> {getAvailabilityLabel(item.job.availability)}
+                    </span>
+                  </div>
+
+                  <div className="jobs-job-card__match-box">
+                    <span className="panel__label">Por que combina com você</span>
+                    <div className="progress-bar progress-bar--animated">
+                      <span className={`progress-bar__fill progress-bar__fill--${scoreTone}`} style={{ width: `${item.score}%` }} />
+                    </div>
+                    <p>{item.justification}</p>
+                  </div>
+                </div>
+
+                <div className="jobs-job-card__footer">
+                  {item.application ? (
+                    <span className={`status-pill status-pill--${getApplicationStatusTone(item.application.status)}`}>
+                      {getApplicationStatusLabel(item.application.status)}
+                    </span>
+                  ) : (
+                    <button className="secondary-button" type="button" onClick={() => openJobDetails(item.job.id)}>
+                      Ver detalhes
+                    </button>
+                  )}
+
+                  <button
+                    className="primary-button"
+                    type="button"
+                    disabled={
+                      submittingJobId === item.job.id ||
+                      Boolean(item.application) ||
+                      !isAuthenticated ||
+                      user?.role !== "STUDENT"
+                    }
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleApply(item.job.id);
+                    }}
+                  >
+                    {item.application
+                      ? "Candidatura enviada"
+                      : submittingJobId === item.job.id
+                        ? "Enviando..."
+                        : "Candidatar-se com 1 clique"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </section>
       )}
+
+      {selectedJob ? (
+        <div className="auth-modal-overlay" role="presentation" onClick={closeJobDetails}>
+          <div
+            className="auth-modal jobs-details-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="job-details-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button className="auth-modal__close" type="button" onClick={closeJobDetails} aria-label="Fechar detalhes da vaga">
+              ×
+            </button>
+
+            <div className="jobs-details-modal__layout">
+              <div className="jobs-details-modal__media">
+                <img src={selectedJob.heroImage} alt={selectedJob.job.title} loading="lazy" />
+              </div>
+
+              <div className="jobs-details-modal__content">
+                <div className="auth-card__intro auth-modal__intro auth-modal__intro--compact">
+                  <span className="page-eyebrow">{selectedJob.job.company?.name ?? "Empresa parceira"}</span>
+                  <h1 id="job-details-modal-title">{selectedJob.job.title}</h1>
+                  <p>{selectedJob.job.company?.about ?? "Veja mais contexto sobre a vaga, requisitos e compatibilidade com o seu perfil."}</p>
+                </div>
+
+                <div className="jobs-details-modal__meta">
+                  <span className={`status-pill status-pill--${getScoreTone(selectedJob.score)}`}>{getScoreLabel(selectedJob.score)}</span>
+                  <span className="jobs-job-card__meta-item">{getJobModelLabel(selectedJob.job.model)}</span>
+                  <span className="jobs-job-card__meta-item">{selectedJob.job.location ?? "Local flexível"}</span>
+                </div>
+
+                <div className={`jobs-job-card__score jobs-job-card__score--${getScoreTone(selectedJob.score)}`}>
+                  <strong>{selectedJob.score}%</strong>
+                  <span>{selectedJob.scoreLabel}</span>
+                </div>
+
+                <div className="jobs-details-modal__section">
+                  <span className="panel__label">Descrição</span>
+                  <p>{selectedJob.job.description}</p>
+                </div>
+
+                <div className="jobs-details-modal__section">
+                  <span className="panel__label">Skills</span>
+                  <div className="skill-tags">
+                    {selectedJob.job.skills.map((skill) => (
+                      <span key={skill} className="skill-tag">{skill}</span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="jobs-details-modal__details">
+                  <span><strong>Curso:</strong> {selectedJob.job.course ?? "Sem requisito específico"}</span>
+                  <span><strong>Disponibilidade:</strong> {getAvailabilityLabel(selectedJob.job.availability)}</span>
+                </div>
+
+                <div className="jobs-job-card__match-box">
+                  <span className="panel__label">Por que combina com você</span>
+                  <div className="progress-bar progress-bar--animated">
+                    <span className={`progress-bar__fill progress-bar__fill--${getScoreTone(selectedJob.score)}`} style={{ width: `${selectedJob.score}%` }} />
+                  </div>
+                  <p>{selectedJob.justification}</p>
+                </div>
+
+                <div className="jobs-details-modal__actions">
+                  {selectedJob.application ? (
+                    <span className={`status-pill status-pill--${getApplicationStatusTone(selectedJob.application.status)}`}>
+                      {getApplicationStatusLabel(selectedJob.application.status)}
+                    </span>
+                  ) : null}
+
+                  <button
+                    className="primary-button"
+                    type="button"
+                    disabled={
+                      submittingJobId === selectedJob.job.id ||
+                      Boolean(selectedJob.application) ||
+                      !isAuthenticated ||
+                      user?.role !== "STUDENT"
+                    }
+                    onClick={() => handleApply(selectedJob.job.id)}
+                  >
+                    {selectedJob.application
+                      ? "Candidatura enviada"
+                      : submittingJobId === selectedJob.job.id
+                        ? "Enviando..."
+                        : "Candidatar-se com 1 clique"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

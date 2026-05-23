@@ -39,6 +39,8 @@ export class UserService {
       id: user.id,
       email: user.email,
       role: user.role,
+      firstName: data.firstName?.trim() || undefined,
+      lastName: data.lastName?.trim() || undefined,
     };
   }
 
@@ -88,9 +90,14 @@ export class UserService {
     if (user.role === "STUDENT") {
       try {
         const student = await studentService.findByUserId(user.id);
+        const [firstName = student.name, ...rest] = student.name.split(" ").filter(Boolean);
         return {
           ...baseUser,
           name: student.name,
+          displayName: student.name,
+          avatarUrl: student.photoUrl ?? undefined,
+          firstName,
+          lastName: rest.join(" ") || undefined,
         };
       } catch {
         return baseUser;
@@ -103,6 +110,8 @@ export class UserService {
         return {
           ...baseUser,
           name: company.name,
+          displayName: company.tradeName || company.name || company.legalName || undefined,
+          avatarUrl: company.logoUrl ?? undefined,
         };
       } catch {
         return baseUser;
