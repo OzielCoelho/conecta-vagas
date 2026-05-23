@@ -4,11 +4,23 @@ export type CompanyProfile = {
   id: string;
   name: string;
   about?: string | null;
+  logoUrl?: string | null;
+  commercialPhone?: string | null;
+  legalName?: string | null;
+  tradeName?: string | null;
+  cultureDescription?: string | null;
+  businessSector?: string | null;
 };
 
 export type CreateCompanyProfileInput = {
-  name: string;
+  name?: string;
   about?: string;
+  logoUrl?: string;
+  commercialPhone?: string;
+  legalName: string;
+  tradeName: string;
+  cultureDescription?: string;
+  businessSector?: string;
 };
 
 export function getMyCompanyProfile(token: string) {

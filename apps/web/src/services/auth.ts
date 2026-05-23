@@ -10,6 +10,8 @@ export type RegisterInput = {
   email: string;
   password: string;
   role: "STUDENT" | "COMPANY";
+  firstName?: string;
+  lastName?: string;
 };
 
 export type UpdateAccountInput = {

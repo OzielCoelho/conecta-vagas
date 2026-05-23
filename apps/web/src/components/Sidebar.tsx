@@ -10,7 +10,7 @@ type SidebarMenuItem = {
 };
 
 const dashboardItem: SidebarMenuItem = {
-  to: "/",
+  to: "/dashboard",
   label: "Dashboard",
   end: true,
   icon: (

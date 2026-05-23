@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import { CompanyProfileForm, type CompanyProfileFormValues } from "../components/profile/CompanyProfileForm";
 import { getMyCompanyProfile, updateCompanyProfile } from "../services/companies";
 
 export function CompanyProfilePage() {
-  const { token } = useAuth();
+  const { token, refreshCurrentUser } = useAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<CompanyProfileFormValues | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [previewLogoUrl, setPreviewLogoUrl] = useState("");
 
   useEffect(() => {
     if (!token) return;
@@ -22,9 +23,14 @@ export function CompanyProfilePage() {
       .then((profile) => {
         setProfileId(profile.id);
         setInitialValues({
-          name: profile.name,
-          about: profile.about ?? "",
+          logoUrl: profile.logoUrl ?? "",
+          tradeName: profile.tradeName ?? profile.name,
+          legalName: profile.legalName ?? profile.name,
+          commercialPhone: profile.commercialPhone ?? "",
+          businessSector: profile.businessSector ?? "",
+          cultureDescription: profile.cultureDescription ?? profile.about ?? "",
         });
+        setPreviewLogoUrl(profile.logoUrl ?? "");
       })
       .catch((loadError) => {
         setError(loadError instanceof Error ? loadError.message : "Não foi possível carregar o perfil.");
@@ -47,9 +53,15 @@ export function CompanyProfilePage() {
     try {
       const updatedProfile = await updateCompanyProfile(profileId, data, token);
       setInitialValues({
-        name: updatedProfile.name,
-        about: updatedProfile.about ?? "",
+        logoUrl: updatedProfile.logoUrl ?? "",
+        tradeName: updatedProfile.tradeName ?? updatedProfile.name,
+        legalName: updatedProfile.legalName ?? updatedProfile.name,
+        commercialPhone: updatedProfile.commercialPhone ?? "",
+        businessSector: updatedProfile.businessSector ?? "",
+        cultureDescription: updatedProfile.cultureDescription ?? updatedProfile.about ?? "",
       });
+      setPreviewLogoUrl(updatedProfile.logoUrl ?? "");
+      await refreshCurrentUser();
       setSuccessMessage("Perfil atualizado com sucesso.");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível atualizar o perfil.");
@@ -58,94 +70,43 @@ export function CompanyProfilePage() {
     }
   }
 
-  const content = useMemo(() => {
-    if (isLoading) {
-      return <div className="panel"><p>Carregando perfil...</p></div>;
-    }
+  if (isLoading) {
+    return <section className="page-section profile-page company-profile-page company-profile-page--simple"><div className="panel"><p>Carregando perfil...</p></div></section>;
+  }
 
-    if (!initialValues) {
-      return <div className="panel"><p>{error ?? "Perfil não encontrado."}</p></div>;
-    }
-
-    return (
-      <section className="company-profile-layout company-profile-layout--refined">
-        <article className="panel company-profile-hero-card company-profile-hero-card--refined">
-          <span className="panel__label">Empresa</span>
-          <h2>{initialValues.name}</h2>
-          <p>Atualize a apresentação da sua organização para dar mais contexto às vagas e ao processo seletivo.</p>
-          <div className="company-profile-hero-card__chips">
-            <span className="status-pill">Perfil institucional</span>
-            <span className="status-pill status-pill--highlight">Pronto para recrutamento</span>
-          </div>
-          <div className="company-profile-highlight-list">
-            <article className="company-profile-highlight-item">
-              <span className="panel__label">Posicionamento</span>
-              <strong>Marca empregadora clara</strong>
-              <p>Ajuda o candidato a entender rapidamente quem é a empresa.</p>
-            </article>
-            <article className="company-profile-highlight-item">
-              <span className="panel__label">Confiança</span>
-              <strong>Perfil profissional</strong>
-              <p>Mais contexto institucional melhora a percepção das vagas.</p>
-            </article>
-          </div>
-        </article>
-
-        <section className="content-grid content-grid--three company-profile-summary-grid">
-          <article className="panel company-summary-card company-summary-card--profile">
-            <span className="panel__label">Status</span>
-            <strong>Ativo</strong>
-            <p>Perfil institucional pronto para receber candidatos.</p>
-          </article>
-          <article className="panel company-summary-card company-summary-card--profile">
-            <span className="panel__label">Vagas</span>
-            <strong>08</strong>
-            <p>Publicações que podem aproveitar esta apresentação.</p>
-          </article>
-          <article className="panel company-summary-card company-summary-card--profile">
-            <span className="panel__label">Comunicação</span>
-            <strong>Clara</strong>
-            <p>Contexto objetivo para dar confiança ao candidato.</p>
-          </article>
-        </section>
-
-        <section className="company-profile-detail-grid">
-          <article className="panel company-profile-about-card">
-            <span className="panel__label">Apresentação atual</span>
-            <h2>Como sua empresa aparece para os candidatos</h2>
-            <p>{initialValues.about || "Adicione uma descrição para apresentar sua cultura, área de atuação e objetivos das vagas."}</p>
-          </article>
-
-          <article className="panel company-profile-editor-card company-profile-editor-card--refined">
-            <div>
-              <span className="panel__label">Edição do perfil</span>
-              <h2>Atualize apresentação e posicionamento da empresa</h2>
-            </div>
-            {successMessage ? <p className="form-success">{successMessage}</p> : null}
-            <CompanyProfileForm
-              initialValues={initialValues}
-              submitLabel="Salvar alterações"
-              isSubmitting={isSubmitting}
-              error={error}
-              onSubmit={handleSubmit}
-            />
-          </article>
-        </section>
-      </section>
-    );
-  }, [error, initialValues, isLoading, isSubmitting, successMessage]);
+  if (!initialValues) {
+    return <section className="page-section profile-page company-profile-page company-profile-page--simple"><div className="panel"><p>{error ?? "Perfil não encontrado."}</p></div></section>;
+  }
 
   return (
-    <section className="page-section profile-page company-profile-page">
-      <header className="page-header company-profile-page__header">
-        <div>
-          <span className="page-eyebrow">Meu perfil</span>
-          <h1>Perfil da empresa</h1>
-          <p>Edite as informações principais da empresa para manter a comunicação com os estudantes mais clara e consistente.</p>
+    <section className="page-section profile-page company-profile-page company-profile-page--simple">
+      <section className="panel company-profile-form-panel">
+        <div className="company-profile-form-panel__header">
+          <div className="company-profile-form-panel__identity">
+            {previewLogoUrl ? (
+              <img className="company-profile-form-panel__logo" src={previewLogoUrl} alt={initialValues.tradeName} />
+            ) : (
+              <span className="company-profile-form-panel__logo company-profile-form-panel__logo--placeholder">
+                {initialValues.tradeName.slice(0, 2).toUpperCase()}
+              </span>
+            )}
+            <div>
+              <span className="panel__label">Meu perfil</span>
+              <h1>{initialValues.tradeName}</h1>
+            </div>
+          </div>
         </div>
-      </header>
 
-      {content}
+        {successMessage ? <p className="form-success">{successMessage}</p> : null}
+        <CompanyProfileForm
+          initialValues={initialValues}
+          submitLabel="Salvar alterações"
+          isSubmitting={isSubmitting}
+          error={error}
+          onSubmit={handleSubmit}
+          onLogoChange={setPreviewLogoUrl}
+        />
+      </section>
     </section>
   );
 }

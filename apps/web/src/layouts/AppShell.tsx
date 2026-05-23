@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthProvider";
 import { Sidebar } from "../components/Sidebar";
 
 const pageTitles: Record<string, string> = {
-  "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/feed": "Feed",
   "/vagas": "Vagas",
   "/alunos": "Candidatos",
@@ -36,8 +36,8 @@ export function AppShell() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const currentPage = pageTitles[location.pathname] ?? "Dashboard";
   const userLabel = user ? roleLabels[user.role] ?? user.role : "Visitante";
-  const userName = useMemo(() => user?.name?.trim() || user?.email || "Usuário", [user]);
-  const initials = useMemo(() => getUserInitials(user?.name, user?.email), [user]);
+  const userName = useMemo(() => user?.displayName?.trim() || user?.name?.trim() || user?.email || "Usuário", [user]);
+  const initials = useMemo(() => getUserInitials(user?.displayName || user?.name, user?.email), [user]);
 
   function openAuthModal(type: "login" | "register") {
     navigate(`/?auth=${type}`, { replace: location.pathname === "/" });
@@ -70,7 +70,6 @@ export function AppShell() {
                   <div className="topbar__user-text">
                     <span className="topbar__user-greeting">{isDemo ? "Modo demonstração" : `Bem-vindo(a), ${userLabel}`}</span>
                     <strong>{userName}</strong>
-                    <span className="topbar__user-email">{user.email}</span>
                   </div>
 
                   <div className="topbar__user-menu-wrap">
@@ -81,7 +80,11 @@ export function AppShell() {
                       aria-expanded={isUserMenuOpen}
                       onClick={() => setIsUserMenuOpen((current) => !current)}
                     >
-                      <span>{initials}</span>
+                      {user?.avatarUrl ? (
+                        <img className="topbar__user-avatar-image" src={user.avatarUrl} alt={userName} />
+                      ) : (
+                        <span>{initials}</span>
+                      )}
                     </button>
 
                     {isUserMenuOpen ? (

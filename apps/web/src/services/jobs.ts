@@ -1,5 +1,10 @@
 import { apiGet, apiPost, apiPut } from "./api";
-import type { StudentProfile } from "./students";
+import {
+  availabilityOptions,
+  formatAvailabilityList,
+  type AvailabilityOption,
+  type StudentProfile,
+} from "./students";
 
 export type JobModel = "REMOTE" | "IN_PERSON" | "HYBRID";
 
@@ -11,7 +16,7 @@ export type JobItem = {
   model: JobModel;
   location?: string | null;
   course?: string | null;
-  availability?: string | null;
+  availability?: AvailabilityOption | null;
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -29,7 +34,7 @@ export type CreateJobInput = {
   model: JobModel;
   location?: string;
   course?: string;
-  availability?: string;
+  availability?: AvailabilityOption;
 };
 
 export type UpdateJobInput = CreateJobInput & {
@@ -62,6 +67,11 @@ export function getJobModelLabel(model: JobModel) {
   return "Presencial";
 }
 
+export function getAvailabilityLabel(option?: AvailabilityOption | null) {
+  if (!option) return "Horário a combinar";
+  return availabilityOptions.find((item) => item.value === option)?.label ?? option;
+}
+
 export function estimateJobMatch(student: StudentProfile, job: JobItem) {
   let score = 0;
 
@@ -77,7 +87,7 @@ export function estimateJobMatch(student: StudentProfile, job: JobItem) {
     score += 25;
   }
 
-  if (job.availability && student.availability.toLowerCase() === job.availability.toLowerCase()) {
+  if (job.availability && student.availability.includes(job.availability)) {
     score += 15;
   }
 
@@ -99,9 +109,11 @@ export function buildMatchJustification(student: StudentProfile, job: JobItem) {
     reasons.push("curso alinhado");
   }
 
-  if (job.availability && student.availability.toLowerCase() === job.availability.toLowerCase()) {
-    reasons.push("disponibilidade compatível");
+  if (job.availability && student.availability.includes(job.availability)) {
+    reasons.push(`disponibilidade compatível (${getAvailabilityLabel(job.availability)})`);
   }
 
   return reasons.length > 0 ? reasons.join(" • ") : "Perfil ainda com pouca aderência detectada";
 }
+
+export { availabilityOptions, formatAvailabilityList };

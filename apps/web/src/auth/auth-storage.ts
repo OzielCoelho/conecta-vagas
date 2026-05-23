@@ -3,6 +3,10 @@ export type AuthUser = {
   email: string;
   role: "STUDENT" | "COMPANY" | "COORDINATOR";
   name?: string;
+  displayName?: string;
+  avatarUrl?: string;
+  firstName?: string;
+  lastName?: string;
 };
 
 export type StoredSession = {

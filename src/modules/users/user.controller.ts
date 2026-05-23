@@ -6,9 +6,9 @@ const userService = new UserService();
 
 export class UserController {
   async register(request: FastifyRequest, reply: FastifyReply) {
-    const { email, password, role } = request.body as CreateUserDTO;
+    const { email, password, role, firstName, lastName } = request.body as CreateUserDTO;
 
-    const user = await userService.create({ email, password, role });
+    const user = await userService.create({ email, password, role, firstName, lastName });
 
     return reply.status(201).send(user);
   }

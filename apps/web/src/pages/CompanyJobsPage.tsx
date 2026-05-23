@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthProvider";
 import {
+  availabilityOptions,
   createJob,
+  getAvailabilityLabel,
   getJobModelLabel,
   getMyCompanyJobs,
   updateJob,
@@ -9,6 +11,7 @@ import {
   type JobItem,
   type JobModel,
 } from "../services/jobs";
+import type { AvailabilityOption } from "../services/students";
 
 const initialForm: CreateJobInput = {
   title: "",
@@ -17,7 +20,7 @@ const initialForm: CreateJobInput = {
   model: "REMOTE",
   location: "",
   course: "",
-  availability: "",
+  availability: undefined,
 };
 
 export function CompanyJobsPage() {
@@ -30,7 +33,7 @@ export function CompanyJobsPage() {
   const [model, setModel] = useState<JobModel>("REMOTE");
   const [location, setLocation] = useState("");
   const [course, setCourse] = useState("");
-  const [availability, setAvailability] = useState("");
+  const [availability, setAvailability] = useState<AvailabilityOption | "">("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,9 +128,9 @@ export function CompanyJobsPage() {
       return;
     }
 
-    setIsSubmitting(true);
     setError(null);
     setSuccessMessage(null);
+    setIsSubmitting(true);
 
     const payload: CreateJobInput = {
       title,
@@ -140,16 +143,20 @@ export function CompanyJobsPage() {
     };
 
     try {
-      if (selectedJobId) {
-        const updated = await updateJob(selectedJobId, payload, token);
-        setJobs((current) => current.map((job) => (job.id === updated.id ? updated : job)));
-        setSuccessMessage("Vaga atualizada com sucesso.");
-      } else {
-        const created = await createJob(payload, token);
-        setJobs((current) => [created, ...current]);
-        setSelectedJobId(created.id);
-        setSuccessMessage("Vaga criada com sucesso.");
-      }
+      const savedJob = selectedJobId
+        ? await updateJob(selectedJobId, payload, token)
+        : await createJob(payload, token);
+
+      setJobs((current) => {
+        const hasJob = current.some((job) => job.id === savedJob.id);
+        if (hasJob) {
+          return current.map((job) => (job.id === savedJob.id ? savedJob : job));
+        }
+        return [savedJob, ...current];
+      });
+
+      setSelectedJobId(savedJob.id);
+      setSuccessMessage(selectedJobId ? "Vaga atualizada com sucesso." : "Vaga publicada com sucesso.");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível salvar a vaga.");
     } finally {
@@ -160,60 +167,38 @@ export function CompanyJobsPage() {
   async function handleToggleJobStatus(job: JobItem) {
     if (!token) return;
 
-    setError(null);
-    setSuccessMessage(null);
-
     try {
-      const updated = await updateJob(
-        job.id,
-        {
-          title: job.title,
-          description: job.description,
-          skills: job.skills,
-          model: job.model,
-          location: job.location ?? undefined,
-          course: job.course ?? undefined,
-          availability: job.availability ?? undefined,
-          isActive: !job.isActive,
-        },
-        token
-      );
-      setJobs((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-      if (selectedJobId === updated.id) {
-        setSelectedJobId(updated.id);
-      }
-      setSuccessMessage(updated.isActive ? "Vaga reativada com sucesso." : "Vaga pausada com sucesso.");
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Não foi possível atualizar o status da vaga.");
-    }
-  }
+      const updatedJob = await updateJob(job.id, {
+        title: job.title,
+        description: job.description,
+        skills: job.skills,
+        model: job.model,
+        location: job.location ?? undefined,
+        course: job.course ?? undefined,
+        availability: job.availability ?? undefined,
+        isActive: !job.isActive,
+      }, token);
 
-  if (isLoading) {
-    return (
-      <section className="page-section company-jobs-page">
-        <header className="page-header company-jobs-page__header">
-          <div>
-            <span className="page-eyebrow">Gestão de vagas</span>
-            <h1>Carregando vagas da empresa...</h1>
-          </div>
-        </header>
-      </section>
-    );
+      setJobs((current) => current.map((item) => (item.id === updatedJob.id ? updatedJob : item)));
+    } catch (toggleError) {
+      setError(toggleError instanceof Error ? toggleError.message : "Não foi possível atualizar o status da vaga.");
+    }
   }
 
   return (
     <section className="page-section company-jobs-page company-jobs-page--refined">
       <header className="page-header company-jobs-page__header">
         <div>
-          <span className="page-eyebrow">Gestão de vagas</span>
-          <h1>Crie e edite vagas para atrair os candidatos certos.</h1>
-          <p>Publique novas oportunidades, ajuste requisitos e ative ou pause vagas em um único painel.</p>
+          <span className="page-eyebrow">Vagas</span>
+          <h1>Gerencie oportunidades com requisitos mais claros.</h1>
+          <p>Defina curso, skills e um período principal para combinar melhor com a disponibilidade dos candidatos.</p>
         </div>
+        <button className="secondary-button" type="button" onClick={resetForm}>Nova vaga</button>
       </header>
 
       <section className="content-grid content-grid--three company-jobs-page__summary">
         {summary.map((item) => (
-          <article key={item.label} className="panel company-summary-card">
+          <article key={item.label} className="panel student-summary-card student-summary-card--directory">
             <span className="panel__label">{item.label}</span>
             <strong>{item.value}</strong>
             <p>{item.helper}</p>
@@ -221,32 +206,31 @@ export function CompanyJobsPage() {
         ))}
       </section>
 
-      <section className="company-jobs-layout">
+      <section className="company-jobs-layout company-jobs-layout--refined">
         <article className="panel company-jobs-list-card">
           <div className="company-jobs-list-card__header">
             <div>
-              <span className="panel__label">Minhas vagas</span>
-              <h2>Oportunidades publicadas</h2>
+              <span className="panel__label">Vagas da empresa</span>
+              <h2>Edite ou acompanhe cada publicação</h2>
             </div>
-            <button className="secondary-button" type="button" onClick={resetForm}>
-              Nova vaga
-            </button>
           </div>
 
-          {jobs.length ? (
-            <div className="company-jobs-list">
+          {isLoading ? (
+            <p>Carregando vagas...</p>
+          ) : jobs.length ? (
+            <div className="company-jobs-list company-jobs-list--refined">
               {jobs.map((job) => (
                 <article
                   key={job.id}
                   className={selectedJobId === job.id ? "company-job-card company-job-card--active" : "company-job-card"}
                 >
                   <div>
-                    <span className="panel__label">{getJobModelLabel(job.model)}</span>
                     <strong>{job.title}</strong>
                     <p>{job.course ?? "Sem curso obrigatório"}</p>
+                    <span>{job.availability ? getAvailabilityLabel(job.availability) : "Horário a combinar"}</span>
                   </div>
                   <div className="company-job-card__actions">
-                    <span className={job.isActive ? "status-pill status-pill--green" : "status-pill status-pill--red"}>
+                    <span className={job.isActive ? "status-pill status-pill--green" : "status-pill status-pill--amber"}>
                       {job.isActive ? "Ativa" : "Pausada"}
                     </span>
                     <button className="secondary-button" type="button" onClick={() => setSelectedJobId(job.id)}>
@@ -296,9 +280,14 @@ export function CompanyJobsPage() {
                 <input value={course} onChange={(event) => setCourse(event.target.value)} placeholder="Engenharia de Software" />
               </label>
 
-              <label className="field">
-                <span>Disponibilidade</span>
-                <input value={availability} onChange={(event) => setAvailability(event.target.value)} placeholder="Manhã e tarde" />
+              <label className="field jobs-filter-select">
+                <span>Disponibilidade principal</span>
+                <select value={availability} onChange={(event) => setAvailability(event.target.value as AvailabilityOption | "") }>
+                  <option value="">A combinar</option>
+                  {availabilityOptions.map((option: { value: AvailabilityOption; label: string }) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
               </label>
             </div>
 

@@ -29,7 +29,7 @@ export function LoginForm({ onSwitchToRegister }: LoginFormProps) {
           ? result.user.role === "COMPANY"
             ? "/completar-perfil/empresa"
             : "/completar-perfil/aluno"
-          : redirect || "/";
+          : redirect || "/dashboard";
 
       navigate(destination, { replace: true });
     } catch (submitError) {

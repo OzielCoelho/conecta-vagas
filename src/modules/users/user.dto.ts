@@ -4,6 +4,8 @@ export interface CreateUserDTO {
   email: string;
   password: string;
   role: Role;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface LoginDTO {

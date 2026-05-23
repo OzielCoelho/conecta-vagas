@@ -8,6 +8,7 @@ import {
   type ApplicationStatus,
   type CompanyApplication,
 } from "../services/applications";
+import { formatAvailabilityList } from "../services/students";
 import { getMyCompanyJobs, type JobItem } from "../services/jobs";
 
 const candidateStageOrder: ApplicationStatus[] = [
@@ -217,7 +218,7 @@ export function CompanyCandidatesPage() {
                       <span className="panel__label">Top {index + 1}</span>
                       <strong>{application.student.name}</strong>
                       <p>{application.student.course}</p>
-                      <span>{application.student.availability}</span>
+                      <span>{formatAvailabilityList(application.student.availability)}</span>
                     </div>
                   </div>
 
