@@ -829,6 +829,11 @@
   flex-shrink: 0;
 }
 
+.company-candidate-card__avatar--image {
+  object-fit: cover;
+  background: #e2e8f0;
+}
+
 .home-table__skills,
 .student-profile-cta-card__tags,
 .skill-tags,
@@ -2255,9 +2260,10 @@
 
 .public-home-hero__content-art {
   position: absolute;
-  inset: 1rem auto 0 -1rem;
-  width: min(100%, 420px);
-  opacity: 0.16;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.18;
   pointer-events: none;
   z-index: -1;
   filter: saturate(0.95);
@@ -2265,8 +2271,9 @@
 
 .public-home-hero__content-art img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+  object-fit: cover;
 }
 
 .public-home-hero__content > *:not(.public-home-hero__content-art) {
@@ -3351,6 +3358,23 @@
   align-items: center;
 }
 
+.jobs-job-card__footer-status {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.jobs-job-card__footer-status .form-success,
+.jobs-job-card__footer-status .form-error {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.primary-button--success {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  border-color: rgba(22, 163, 74, 0.24);
+}
+
 .progress-bar {
   height: 0.72rem;
   border-radius: 999px;
@@ -3414,6 +3438,10 @@
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: center;
+}
+
+.jobs-details-modal__actions .jobs-job-card__footer-status {
+  flex: 1 1 220px;
 }
 
 .jobs-details-modal__section {

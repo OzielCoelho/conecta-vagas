@@ -7,8 +7,11 @@ const companyRepository = new CompanyRepository();
 const notificationService = new NotificationService();
 
 function normalizeOptionalText(value?: string | null) {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  return value.trim();
 }
 
 function resolveDisplayName(data: {

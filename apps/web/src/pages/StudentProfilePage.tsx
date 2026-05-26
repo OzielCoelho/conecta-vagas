@@ -85,9 +85,13 @@ function CandidatePreviewDetailed({ profile }: { profile: StudentProfile }) {
     <article className="panel profile-preview-card profile-preview-card--detailed">
       <span className="panel__label">Como empresas veem</span>
       <div className="company-candidate-card__main company-candidate-card__main--preview">
-        <span className="company-candidate-card__avatar" aria-hidden="true">
-          {getInitials(profile.name)}
-        </span>
+        {profile.photoUrl ? (
+          <img className="company-candidate-card__avatar company-candidate-card__avatar--image" src={profile.photoUrl} alt={profile.name} />
+        ) : (
+          <span className="company-candidate-card__avatar" aria-hidden="true">
+            {getInitials(profile.name)}
+          </span>
+        )}
         <div>
           <strong>{profile.name}</strong>
           <p>{profile.course}</p>
@@ -132,7 +136,7 @@ function CandidatePreviewDetailed({ profile }: { profile: StudentProfile }) {
 }
 
 export function StudentProfilePage() {
-  const { token, refreshCurrentUser } = useAuth();
+  const { token, user, setUser } = useAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [initialValues, setInitialValues] = useState<StudentProfileFormValues | null>(null);
@@ -176,10 +180,20 @@ export function StudentProfilePage() {
 
     try {
       const updatedProfile = await updateStudentProfile(profileId, data, token);
+      const { firstName, lastName } = splitName(updatedProfile.name);
       setProfile(updatedProfile);
       setInitialValues(getProfileFormValues(updatedProfile));
       setPreviewPhotoUrl(updatedProfile.photoUrl ?? "");
-      await refreshCurrentUser();
+      if (user) {
+        setUser({
+          ...user,
+          name: updatedProfile.name,
+          displayName: updatedProfile.name,
+          firstName,
+          lastName,
+          avatarUrl: updatedProfile.photoUrl ?? undefined,
+        });
+      }
       setSuccessMessage("Perfil atualizado com sucesso.");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível atualizar o perfil.");

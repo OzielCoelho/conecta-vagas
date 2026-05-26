@@ -36,7 +36,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
   } catch {
-    throw new ApiError("Não foi possível enviar a solicitação. Se você selecionou uma imagem, tente outra menor.", 0);
+    throw new ApiError("Não foi possível enviar a solicitação. Verifique sua conexão com o servidor e tente novamente.", 0);
   }
 
   if (!response.ok) {

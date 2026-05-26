@@ -21,6 +21,10 @@ import pythonImage from "../imagens/poython.jpg";
 import cssImage from "../imagens/css.png";
 import slideImage from "../imagens/slide_32.png";
 import showcaseImage from "../imagens/Captura de tela 2026-05-18 205107.png";
+import mulherImage from "../imagens/mulher.png";
+import chrisImage from "../imagens/chris.webp";
+import soichiroImage from "../imagens/soichiro_01.jpg";
+import karinaImage from "../imagens/aespa-karina-prada-ambassador-280824.jpg";
 
 const feedImages = [
   heroStageImage,
@@ -62,6 +66,36 @@ function selectFeedImage(seed: string) {
   return feedImages[total % feedImages.length];
 }
 
+const companyFeedFallbackPhotos = [mulherImage, chrisImage, soichiroImage, karinaImage];
+const fakeCompanyFeedNames = new Set([
+  "gabriel takashi",
+  "gabriel soares",
+  "ana clara souza",
+  "mariana oliveira",
+]);
+
+function isFakeCompanyFeedProfile(student: StudentProfile) {
+  const normalizedName = student.name.trim().toLowerCase();
+  const normalizedId = student.id.trim().toLowerCase();
+  const normalizedPortfolio = student.portfolio?.trim().toLowerCase() ?? "";
+
+  return (
+    normalizedId.startsWith("demo-") ||
+    normalizedName.includes("demo") ||
+    normalizedPortfolio.includes("portfolio-demo.dev") ||
+    fakeCompanyFeedNames.has(normalizedName)
+  );
+}
+
+function getCandidatePhoto(student: StudentProfile) {
+  if (student.photoUrl) {
+    return student.photoUrl;
+  }
+
+  const total = student.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return companyFeedFallbackPhotos[total % companyFeedFallbackPhotos.length];
+}
+
 function buildStudentPost(job: JobItem, application?: StudentApplication) {
   const companyName = job.company?.name ?? "Empresa parceira";
 
@@ -79,14 +113,16 @@ function buildStudentPost(job: JobItem, application?: StudentApplication) {
 }
 
 function buildCompanyPost(student: StudentProfile) {
+  const candidatePhoto = getCandidatePhoto(student);
+
   return {
     id: student.id,
     name: student.name,
     course: student.course,
     publishedAtLabel: student.city || student.state ? [student.city, student.state].filter(Boolean).join(", ") : "Perfil disponível agora",
     avatarText: getInitials(student.name),
-    avatarImage: student.photoUrl ?? undefined,
-    heroImage: student.photoUrl || selectFeedImage(student.id),
+    avatarImage: candidatePhoto ?? undefined,
+    heroImage: candidatePhoto || selectFeedImage(student.id),
     availabilityLabel: formatAvailabilityList(student.availability),
     highlightText: student.headline ?? student.summary ?? student.portfolio ?? "Perfil aberto para novas conexões com empresas e oportunidades.",
     metaLine: [student.university, student.semester].filter(Boolean).join(" • ") || undefined,
@@ -155,7 +191,10 @@ export function FeedPage() {
     [applicationsByJobId, jobs]
   );
 
-  const companyFeed = useMemo(() => students.slice(0, 8).map(buildCompanyPost), [students]);
+  const companyFeed = useMemo(
+    () => students.filter((student) => !isFakeCompanyFeedProfile(student)).slice(0, 8).map(buildCompanyPost),
+    [students]
+  );
 
   if (isLoading) {
     return (

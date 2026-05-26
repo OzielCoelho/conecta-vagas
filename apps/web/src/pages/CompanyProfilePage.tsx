@@ -4,7 +4,7 @@ import { CompanyProfileForm, type CompanyProfileFormValues } from "../components
 import { getMyCompanyProfile, updateCompanyProfile } from "../services/companies";
 
 export function CompanyProfilePage() {
-  const { token, refreshCurrentUser } = useAuth();
+  const { token, user, setUser } = useAuth();
   const [profileId, setProfileId] = useState<string | null>(null);
   const [initialValues, setInitialValues] = useState<CompanyProfileFormValues | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -52,16 +52,24 @@ export function CompanyProfilePage() {
 
     try {
       const updatedProfile = await updateCompanyProfile(profileId, data, token);
+      const displayName = updatedProfile.tradeName ?? updatedProfile.name;
       setInitialValues({
         logoUrl: updatedProfile.logoUrl ?? "",
-        tradeName: updatedProfile.tradeName ?? updatedProfile.name,
+        tradeName: displayName,
         legalName: updatedProfile.legalName ?? updatedProfile.name,
         commercialPhone: updatedProfile.commercialPhone ?? "",
         businessSector: updatedProfile.businessSector ?? "",
         cultureDescription: updatedProfile.cultureDescription ?? updatedProfile.about ?? "",
       });
       setPreviewLogoUrl(updatedProfile.logoUrl ?? "");
-      await refreshCurrentUser();
+      if (user) {
+        setUser({
+          ...user,
+          name: updatedProfile.name,
+          displayName,
+          avatarUrl: updatedProfile.logoUrl ?? undefined,
+        });
+      }
       setSuccessMessage("Perfil atualizado com sucesso.");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível atualizar o perfil.");
