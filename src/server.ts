@@ -21,7 +21,10 @@ const app = Fastify({
   bodyLimit: 4 * 1024 * 1024,
 });
 
-app.register(fastifyCors, { origin: true });
+app.register(fastifyCors, {
+  origin: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+});
 app.register(fastifyJwt, {
   secret: jwtSecret,
 });

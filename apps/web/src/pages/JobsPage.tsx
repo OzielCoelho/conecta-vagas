@@ -83,6 +83,7 @@ export function JobsPage() {
   const [error, setError] = useState<string | null>(null);
   const [submittingJobId, setSubmittingJobId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [applicationFeedbackByJobId, setApplicationFeedbackByJobId] = useState<Record<string, { type: "success" | "error"; message: string }>>({});
 
   useEffect(() => {
     if (!token) {
@@ -207,13 +208,27 @@ export function JobsPage() {
     }
 
     setSubmittingJobId(jobId);
-    setError(null);
+    setApplicationFeedbackByJobId((current) => {
+      const next = { ...current };
+      delete next[jobId];
+      return next;
+    });
 
     try {
       const created = await applyToJob(jobId, token);
       setApplications((current) => [...current.filter((item) => item.job.id !== jobId), created]);
+      setApplicationFeedbackByJobId((current) => ({
+        ...current,
+        [jobId]: { type: "success", message: "Candidatura enviada com sucesso." },
+      }));
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Não foi possível concluir a candidatura.");
+      setApplicationFeedbackByJobId((current) => ({
+        ...current,
+        [jobId]: {
+          type: "error",
+          message: submitError instanceof Error ? submitError.message : "Não foi possível concluir a candidatura.",
+        },
+      }));
     } finally {
       setSubmittingJobId(null);
     }
@@ -389,6 +404,7 @@ export function JobsPage() {
           {filteredJobs.map((item) => {
             const scoreTone = getScoreTone(item.score);
             const scoreDescription = getScoreLabel(item.score);
+            const applicationFeedback = applicationFeedbackByJobId[item.job.id];
 
             return (
               <article key={item.job.id} className={`panel jobs-job-card jobs-job-card--interactive jobs-job-card--${scoreTone}`}>
@@ -450,18 +466,23 @@ export function JobsPage() {
                 </div>
 
                 <div className="jobs-job-card__footer">
-                  {item.application ? (
-                    <span className={`status-pill status-pill--${getApplicationStatusTone(item.application.status)}`}>
-                      {getApplicationStatusLabel(item.application.status)}
-                    </span>
-                  ) : (
-                    <button className="secondary-button" type="button" onClick={() => openJobDetails(item.job.id)}>
-                      Ver detalhes
-                    </button>
-                  )}
+                  <div className="jobs-job-card__footer-status">
+                    {item.application ? (
+                      <span className={`status-pill status-pill--${getApplicationStatusTone(item.application.status)}`}>
+                        {getApplicationStatusLabel(item.application.status)}
+                      </span>
+                    ) : (
+                      <button className="secondary-button" type="button" onClick={() => openJobDetails(item.job.id)}>
+                        Ver detalhes
+                      </button>
+                    )}
+                    {applicationFeedback ? (
+                      <p className={applicationFeedback.type === "success" ? "form-success" : "form-error"}>{applicationFeedback.message}</p>
+                    ) : null}
+                  </div>
 
                   <button
-                    className="primary-button"
+                    className={item.application ? "primary-button primary-button--success" : "primary-button"}
                     type="button"
                     disabled={
                       submittingJobId === item.job.id ||
@@ -551,14 +572,21 @@ export function JobsPage() {
                 </div>
 
                 <div className="jobs-details-modal__actions">
-                  {selectedJob.application ? (
-                    <span className={`status-pill status-pill--${getApplicationStatusTone(selectedJob.application.status)}`}>
-                      {getApplicationStatusLabel(selectedJob.application.status)}
-                    </span>
-                  ) : null}
+                  <div className="jobs-job-card__footer-status">
+                    {selectedJob.application ? (
+                      <span className={`status-pill status-pill--${getApplicationStatusTone(selectedJob.application.status)}`}>
+                        {getApplicationStatusLabel(selectedJob.application.status)}
+                      </span>
+                    ) : null}
+                    {applicationFeedbackByJobId[selectedJob.job.id] ? (
+                      <p className={applicationFeedbackByJobId[selectedJob.job.id].type === "success" ? "form-success" : "form-error"}>
+                        {applicationFeedbackByJobId[selectedJob.job.id].message}
+                      </p>
+                    ) : null}
+                  </div>
 
                   <button
-                    className="primary-button"
+                    className={selectedJob.application ? "primary-button primary-button--success" : "primary-button"}
                     type="button"
                     disabled={
                       submittingJobId === selectedJob.job.id ||

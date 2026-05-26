@@ -52,10 +52,6 @@ function buildFullName(firstName: string, lastName: string) {
   return [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 }
 
-function hasText(value: string) {
-  return value.trim().length > 0;
-}
-
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -154,15 +150,15 @@ export function StudentProfileForm({
         .map((skill) => skill.trim())
         .filter(Boolean),
       availability,
-      headline: hasText(headline) ? headline.trim() : undefined,
-      summary: hasText(summary) ? summary.trim() : undefined,
-      city: hasText(city) ? city.trim() : undefined,
-      state: hasText(state) ? state.trim() : undefined,
-      semester: hasText(semester) ? semester.trim() : undefined,
-      university: hasText(university) ? university.trim() : undefined,
-      cr: hasText(cr) ? cr.trim() : undefined,
-      portfolio: hasText(portfolio) ? portfolio.trim() : undefined,
-      photoUrl: photoUrl || undefined,
+      headline: headline.trim(),
+      summary: summary.trim(),
+      city: city.trim(),
+      state: state.trim(),
+      semester: semester.trim(),
+      university: university.trim(),
+      cr: cr.trim(),
+      portfolio: portfolio.trim(),
+      photoUrl: photoUrl.trim(),
     });
   }
 

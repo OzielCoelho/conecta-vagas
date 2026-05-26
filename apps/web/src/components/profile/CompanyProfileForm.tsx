@@ -97,13 +97,13 @@ export function CompanyProfileForm({
     event.preventDefault();
 
     await onSubmit({
-      logoUrl: logoUrl || undefined,
+      logoUrl: logoUrl.trim(),
       tradeName: tradeName.trim(),
       legalName: legalName.trim(),
-      commercialPhone: hasText(commercialPhone) ? commercialPhone.trim() : undefined,
-      businessSector: hasText(businessSector) ? businessSector.trim() : undefined,
-      cultureDescription: hasText(cultureDescription) ? cultureDescription.trim() : undefined,
-      about: hasText(cultureDescription) ? cultureDescription.trim() : undefined,
+      commercialPhone: commercialPhone.trim(),
+      businessSector: businessSector.trim(),
+      cultureDescription: cultureDescription.trim(),
+      about: cultureDescription.trim(),
       name: tradeName.trim(),
     });
   }

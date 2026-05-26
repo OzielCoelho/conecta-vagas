@@ -10,6 +10,10 @@ import {
 } from "../services/applications";
 import { formatAvailabilityList } from "../services/students";
 import { getMyCompanyJobs, type JobItem } from "../services/jobs";
+import mulherImage from "../imagens/mulher.png";
+import chrisImage from "../imagens/chris.webp";
+import soichiroImage from "../imagens/soichiro_01.jpg";
+import karinaImage from "../imagens/aespa-karina-prada-ambassador-280824.jpg";
 
 const candidateStageOrder: ApplicationStatus[] = [
   "SENT",
@@ -17,6 +21,18 @@ const candidateStageOrder: ApplicationStatus[] = [
   "INTERVIEW",
   "APPROVED",
 ];
+
+const candidatePhotoByName: Record<string, string> = {
+  "gabriel takashi": soichiroImage,
+  "gabriel soares": chrisImage,
+  "ana clara souza": mulherImage,
+  "mariana oliveira": karinaImage,
+};
+
+function getCandidatePhoto(application: CompanyApplication) {
+  const normalizedName = application.student.name.trim().toLowerCase();
+  return application.student.photoUrl || candidatePhotoByName[normalizedName];
+}
 
 export function CompanyCandidatesPage() {
   const { token, user } = useAuth();
@@ -114,6 +130,13 @@ export function CompanyCandidatesPage() {
     return candidateStageOrder[Math.min(currentIndex + 1, candidateStageOrder.length - 1)];
   }
 
+  function getAdvanceActionLabel(status: ApplicationStatus) {
+    if (status === "SENT") return "Colocar em análise";
+    if (status === "UNDER_REVIEW") return "Chamar para entrevista";
+    if (status === "INTERVIEW") return "Aprovar";
+    return "Atualizar";
+  }
+
   async function handleStatusUpdate(application: CompanyApplication, nextStatus: ApplicationStatus) {
     if (!token) {
       return;
@@ -200,6 +223,8 @@ export function CompanyCandidatesPage() {
               const nextStatus = getNextStatus(application.status);
               const canAdvance = application.status !== "APPROVED" && application.status !== "REJECTED" && nextStatus !== application.status;
               const canReject = application.status !== "APPROVED" && application.status !== "REJECTED";
+              const isCurrentApplicationUpdating = isUpdating === application.id;
+              const candidatePhoto = getCandidatePhoto(application);
 
               return (
                 <article
@@ -207,13 +232,17 @@ export function CompanyCandidatesPage() {
                   className={selectedApplication?.id === application.id ? "company-candidate-card company-candidate-card--refined company-candidate-card--active" : "company-candidate-card company-candidate-card--refined"}
                 >
                   <div className="company-candidate-card__main">
-                    <span className="company-candidate-card__avatar" aria-hidden="true">
-                      {application.student.name
-                        .split(" ")
-                        .map((part) => part[0])
-                        .join("")
-                        .slice(0, 2)}
-                    </span>
+                    {candidatePhoto ? (
+                      <img className="company-candidate-card__avatar company-candidate-card__avatar--image" src={candidatePhoto} alt={application.student.name} />
+                    ) : (
+                      <span className="company-candidate-card__avatar" aria-hidden="true">
+                        {application.student.name
+                          .split(" ")
+                          .map((part) => part[0])
+                          .join("")
+                          .slice(0, 2)}
+                      </span>
+                    )}
                     <div>
                       <span className="panel__label">Top {index + 1}</span>
                       <strong>{application.student.name}</strong>
@@ -239,20 +268,20 @@ export function CompanyCandidatesPage() {
                         <button
                           className="secondary-button"
                           type="button"
-                          disabled={isUpdating === application.id}
+                          disabled={isCurrentApplicationUpdating}
                           onClick={() => void handleStatusUpdate(application, "REJECTED")}
                         >
-                          {isUpdating === application.id ? "Atualizando..." : "Recusar"}
+                          {isCurrentApplicationUpdating ? "Atualizando..." : "Recusar"}
                         </button>
                       ) : null}
                       {canAdvance ? (
                         <button
                           className="primary-button"
                           type="button"
-                          disabled={isUpdating === application.id}
+                          disabled={isCurrentApplicationUpdating}
                           onClick={() => void handleStatusUpdate(application, nextStatus)}
                         >
-                          {isUpdating === application.id ? "Atualizando..." : nextStatus === "APPROVED" ? "Aceitar" : "Avançar"}
+                          {isCurrentApplicationUpdating ? "Atualizando..." : getAdvanceActionLabel(application.status)}
                         </button>
                       ) : null}
                     </div>
