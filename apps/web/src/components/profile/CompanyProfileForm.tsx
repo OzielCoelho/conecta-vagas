@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import type { CreateCompanyProfileInput } from "../../services/companies";
+import { readImageAsCompressedDataUrl } from "../../utils/image";
 
 export type CompanyProfileFormValues = {
   logoUrl: string;
@@ -30,15 +31,6 @@ const defaultValues: CompanyProfileFormValues = {
 
 function hasText(value: string) {
   return value.trim().length > 0;
-}
-
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => reject(new Error("Não foi possível carregar a imagem selecionada."));
-    reader.readAsDataURL(file);
-  });
 }
 
 export function CompanyProfileForm({
@@ -75,21 +67,26 @@ export function CompanyProfileForm({
 
     if (!file.type.startsWith("image/")) {
       setLogoError("Selecione um arquivo de imagem válido.");
+      event.target.value = "";
       return;
     }
 
-    if (file.size > 1500 * 1024) {
-      setLogoError("A imagem é muito grande. Selecione outra imagem com no máximo 1,5MB.");
+    if (file.size > 25 * 1024 * 1024) {
+      setLogoError("A imagem é muito grande. Selecione uma imagem de até 25MB.");
+      event.target.value = "";
       return;
     }
 
     try {
-      const nextLogoUrl = await readFileAsDataUrl(file);
+      const nextLogoUrl = await readImageAsCompressedDataUrl(file);
       setLogoUrl(nextLogoUrl);
       setLogoError(null);
       onLogoChange?.(nextLogoUrl);
     } catch (uploadError) {
       setLogoError(uploadError instanceof Error ? uploadError.message : "Não foi possível carregar a imagem.");
+    } finally {
+      // Permite reselecionar o mesmo arquivo (o onChange não dispara para o mesmo value).
+      event.target.value = "";
     }
   }
 
@@ -132,7 +129,7 @@ export function CompanyProfileForm({
         />
         <div>
           <strong>Ícone da empresa</strong>
-          <p className="profile-form__hint">Clique no quadro para enviar uma imagem de até 1,5MB.</p>
+          <p className="profile-form__hint">Clique no quadro para enviar uma imagem. Ela é ajustada automaticamente.</p>
           {logoError ? <p className="form-error">{logoError}</p> : null}
         </div>
       </div>

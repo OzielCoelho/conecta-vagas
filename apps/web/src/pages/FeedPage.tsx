@@ -8,7 +8,7 @@ import {
   type ApplicationStatus,
   type StudentApplication,
 } from "../services/applications";
-import { getJobs, getJobModelLabel, type JobItem } from "../services/jobs";
+import { getAvailabilityLabel, getJobs, getJobModelLabel, type JobItem } from "../services/jobs";
 import { formatAvailabilityList, getStudents, type StudentProfile } from "../services/students";
 import networkingHeroImage from "../imagens/HD-wallpaper-social-networks-blue-digital-background-networking-concepts-blue-networking-background-technology-background.jpg";
 import networkingImage from "../imagens/importancia-do-networking-1024x683.png";
@@ -108,6 +108,10 @@ function buildStudentPost(job: JobItem, application?: StudentApplication) {
     title: job.title,
     description: job.description,
     modelLabel: getJobModelLabel(job.model),
+    location: job.location?.trim() || (job.model === "REMOTE" ? "Trabalho remoto" : undefined),
+    availabilityLabel: getAvailabilityLabel(job.availability),
+    courseLabel: job.course?.trim() || undefined,
+    skills: job.skills.slice(0, 6),
     applicationStatus: application?.status,
   };
 }
@@ -126,8 +130,12 @@ function buildCompanyPost(student: StudentProfile) {
     availabilityLabel: formatAvailabilityList(student.availability),
     highlightText: student.headline ?? student.summary ?? student.portfolio ?? "Perfil aberto para novas conexões com empresas e oportunidades.",
     metaLine: [student.university, student.semester].filter(Boolean).join(" • ") || undefined,
+    location: [student.city, student.state].filter(Boolean).join(", ") || undefined,
+    skills: student.skills.slice(0, 6),
   };
 }
+
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
 
 export function FeedPage() {
   const { token, user } = useAuth();
@@ -213,105 +221,113 @@ export function FeedPage() {
 
   return (
     <section className="page-section feed-page feed-page--refined feed-page--social">
-      <section className="panel feed-composer" aria-label="Criar publicação visual">
-        <div className="feed-composer__top">
-          <span className="feed-card__avatar">{getInitials(user?.name ?? (isCompany ? "Empresa" : "Aluno"))}</span>
-          <button className="feed-composer__input" type="button">
-            {isCompany ? "Compartilhe uma atualização da sua empresa" : "Compartilhe algo com seu feed"}
-          </button>
-        </div>
-        <div className="feed-composer__actions" aria-hidden="true">
-          <span className="feed-composer__action">Foto</span>
-          <span className="feed-composer__action">Vídeo</span>
-          <span className="feed-composer__action">Texto</span>
-        </div>
-      </section>
+      <header className="feed-candidates-header">
+        {isCompany ? (
+          <>
+            <span className="page-eyebrow">Candidatos disponíveis</span>
+            <h1>Talentos prontos para novas oportunidades</h1>
+            <p>Veja rapidamente quem está disponível, com skills e disponibilidade em destaque.</p>
+          </>
+        ) : (
+          <>
+            <span className="page-eyebrow">Vagas para você</span>
+            <h1>Oportunidades alinhadas ao seu perfil</h1>
+            <p>Explore as vagas em destaque, com skills e disponibilidade para combinar com você.</p>
+          </>
+        )}
+      </header>
 
       {!isCompany ? (
-        <section className="feed-grid feed-grid--social">
-          {studentFeed.map((item) => {
-            const statusTone = item.applicationStatus ? getApplicationStatusTone(item.applicationStatus) : "highlight";
-            const statusLabel = item.applicationStatus ? getApplicationStatusLabel(item.applicationStatus) : "Nova oportunidade para seu perfil";
+        <section className="feed-candidates-grid">
+          {studentFeed.length ? (
+            studentFeed.map((item) => {
+              const statusTone = item.applicationStatus ? getApplicationStatusTone(item.applicationStatus) : "highlight";
+              const statusLabel = item.applicationStatus ? getApplicationStatusLabel(item.applicationStatus) : "Nova oportunidade";
 
-            return (
-              <article key={item.id} className="panel feed-card feed-card--job">
-                <div className="feed-card__content feed-card__content--padded">
-                  <div className="feed-card__top">
-                    <div className="feed-card__identity">
-                      <span className="feed-card__avatar">{item.avatarText}</span>
+              return (
+                <article key={item.id} className="panel feed-candidate-card">
+                  <div className="feed-candidate-card__media">
+                    <img src={item.heroImage} alt={item.companyName} />
+                    <span className="feed-candidate-card__avail">{item.modelLabel}</span>
+                  </div>
+
+                  <div className="feed-candidate-card__body">
+                    <div className="feed-candidate-card__identity">
+                      <span className="feed-candidate-card__avatar feed-card__avatar--gradient">{item.avatarText}</span>
                       <div>
-                        <strong>{item.companyName}</strong>
-                        <span>{item.publishedAtLabel}</span>
+                        <strong>{item.title}</strong>
+                        <span>{item.companyName}</span>
                       </div>
                     </div>
-                    <span className="status-pill status-pill--highlight">{item.modelLabel}</span>
-                  </div>
-                </div>
 
-                <div className="feed-card__media feed-card__media--social">
-                  <img src={item.heroImage} alt={item.companyName} />
-                  <span className="feed-card__overlay">Publicação de vaga</span>
-                </div>
+                    <p className="feed-candidate-card__highlight">{item.description}</p>
 
-                <div className="feed-card__content feed-card__content--social">
-                  <div className="feed-card__body">
-                    <h2>{item.title}</h2>
-                    <p className="feed-card__excerpt">{item.description}</p>
-                  </div>
+                    {item.skills.length ? (
+                      <div className="feed-candidate-card__tags">
+                        {item.skills.slice(0, 4).map((skill, index) => (
+                          <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
 
-                  <div className="feed-card__footer feed-card__footer--social">
-                    <span className={`status-pill status-pill--${statusTone}`}>{statusLabel}</span>
-                    <span>{item.applicationStatus ? "Acompanhe sua candidatura no perfil" : "Veja se combina com sua disponibilidade"}</span>
+                    <div className="feed-candidate-card__footer">
+                      <span className={`status-pill status-pill--${statusTone}`}>{statusLabel}</span>
+                      {item.location ? <span className="feed-candidate-card__meta">📍 {item.location}</span> : null}
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            })
+          ) : (
+            <article className="panel jobs-empty-state feed-candidates-grid__empty">
+              <span className="panel__label">Nenhuma vaga por enquanto</span>
+              <h2>Assim que novas vagas forem publicadas, elas aparecem aqui.</h2>
+            </article>
+          )}
         </section>
       ) : (
-        <section className="feed-grid feed-grid--social">
+        <section className="feed-candidates-grid">
           {companyFeed.length ? (
             companyFeed.map((item) => (
-              <article key={item.id} className="panel feed-card feed-card--candidate feed-card--job">
-                <div className="feed-card__content feed-card__content--padded">
-                  <div className="feed-card__top">
-                    <div className="feed-card__identity">
-                      {item.avatarImage ? (
-                        <img className="feed-card__avatar feed-card__avatar--image" src={item.avatarImage} alt={item.name} />
-                      ) : (
-                        <span className="feed-card__avatar">{item.avatarText}</span>
-                      )}
-                      <div>
-                        <strong>{item.name}</strong>
-                        <span>{item.course}</span>
-                      </div>
-                    </div>
-                    <span className="status-pill status-pill--highlight">{item.availabilityLabel}</span>
-                  </div>
-                </div>
-
-                <div className="feed-card__media feed-card__media--social">
+              <article key={item.id} className="panel feed-candidate-card">
+                <div className="feed-candidate-card__media">
                   <img src={item.heroImage} alt={item.name} />
-                  <span className="feed-card__overlay">Candidato em destaque</span>
+                  <span className="feed-candidate-card__avail">{item.availabilityLabel}</span>
                 </div>
 
-                <div className="feed-card__content feed-card__content--social">
-                  <div className="feed-card__body">
-                    <h2>{item.name}</h2>
-                    <p className="feed-card__excerpt">{item.highlightText}</p>
+                <div className="feed-candidate-card__body">
+                  <div className="feed-candidate-card__identity">
+                    {item.avatarImage ? (
+                      <img className="feed-candidate-card__avatar feed-candidate-card__avatar--image" src={item.avatarImage} alt={item.name} />
+                    ) : (
+                      <span className="feed-candidate-card__avatar feed-card__avatar--gradient">{item.avatarText}</span>
+                    )}
+                    <div>
+                      <strong>{item.name}</strong>
+                      <span>{item.course}</span>
+                    </div>
                   </div>
 
-                  {item.metaLine ? <p className="feed-card__meta-line">{item.metaLine}</p> : null}
+                  <p className="feed-candidate-card__highlight">{item.highlightText}</p>
 
-                  <div className="feed-card__footer feed-card__footer--social">
-                    <span className="status-pill status-pill--highlight">Perfil disponível</span>
-                    <span>{item.publishedAtLabel}</span>
-                  </div>
+                  {item.skills.length ? (
+                    <div className="feed-candidate-card__tags">
+                      {item.skills.slice(0, 4).map((skill, index) => (
+                        <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {item.metaLine ? <p className="feed-candidate-card__meta">🎓 {item.metaLine}</p> : null}
                 </div>
               </article>
             ))
           ) : (
-            <article className="panel jobs-empty-state">
+            <article className="panel jobs-empty-state feed-candidates-grid__empty">
               <span className="panel__label">Sem perfis por enquanto</span>
               <h2>Assim que novos candidatos ficarem visíveis, eles aparecem aqui.</h2>
               <p>Esse feed foi pensado para a empresa acompanhar rapidamente quem está disponível.</p>

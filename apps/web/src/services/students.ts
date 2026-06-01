@@ -63,6 +63,6 @@ export function createStudentProfile(data: CreateStudentProfileInput, token: str
   return apiPost<StudentProfile>("/students", data, token);
 }
 
-export function updateStudentProfile(id: string, data: CreateStudentProfileInput, token: string) {
+export function updateStudentProfile(id: string, data: Partial<CreateStudentProfileInput>, token: string) {
   return apiPut<StudentProfile>(`/students/${id}`, data, token);
 }

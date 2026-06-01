@@ -41,6 +41,8 @@ type JobViewModel = {
 
 const jobImages = [heroStageImage, slideImage, networkingImage, powerImage, basesImage, socialImage, showcaseImage];
 
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
+
 function selectJobImage(seed: string) {
   const total = seed.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
   return jobImages[total % jobImages.length];
@@ -128,7 +130,7 @@ export function JobsPage() {
 
   const jobsView = useMemo<JobViewModel[]>(() => {
     return jobs.map((job) => {
-      const application = applications.find((item) => item.job.id === job.id);
+      const application = applications.find((item) => item.job?.id === job.id);
       const estimatedScore = studentProfile ? estimateJobMatch(studentProfile, job) : 0;
       const score = application?.score ?? estimatedScore;
       const scoreLabel = application
@@ -216,7 +218,9 @@ export function JobsPage() {
 
     try {
       const created = await applyToJob(jobId, token);
-      setApplications((current) => [...current.filter((item) => item.job.id !== jobId), created]);
+      const appliedJob = jobsView.find((item) => item.job.id === jobId)?.job;
+      const createdWithJob: StudentApplication = created.job ? created : { ...created, job: appliedJob as JobItem };
+      setApplications((current) => [...current.filter((item) => item.job?.id !== jobId), createdWithJob]);
       setApplicationFeedbackByJobId((current) => ({
         ...current,
         [jobId]: { type: "success", message: "Candidatura enviada com sucesso." },
@@ -426,8 +430,8 @@ export function JobsPage() {
                       <span className="panel__label">{item.job.company?.name ?? "Empresa parceira"}</span>
                       <h2>{item.job.title}</h2>
                       <p className="jobs-job-card__meta">
-                        <span className="jobs-job-card__meta-item">{getJobModelLabel(item.job.model)}</span>
-                        <span className="jobs-job-card__meta-item">{item.job.location ?? "Local flexível"}</span>
+                        <span className="jobs-job-card__meta-item">💻 {getJobModelLabel(item.job.model)}</span>
+                        <span className="jobs-job-card__meta-item">📍 {item.job.location ?? "Local flexível"}</span>
                       </p>
                     </div>
 
@@ -440,8 +444,8 @@ export function JobsPage() {
                   <p>{item.job.description}</p>
 
                   <div className="skill-tags">
-                    {item.job.skills.map((skill) => (
-                      <span key={skill} className="skill-tag">
+                    {item.job.skills.map((skill, index) => (
+                      <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>
                         {skill}
                       </span>
                     ))}
@@ -449,10 +453,10 @@ export function JobsPage() {
 
                   <div className="jobs-job-card__details">
                     <span>
-                      <strong>Curso:</strong> {item.job.course ?? "Sem requisito específico"}
+                      🎓 <strong>Curso:</strong> {item.job.course ?? "Sem requisito específico"}
                     </span>
                     <span>
-                      <strong>Disponibilidade:</strong> {getAvailabilityLabel(item.job.availability)}
+                      🗓️ <strong>Disponibilidade:</strong> {getAvailabilityLabel(item.job.availability)}
                     </span>
                   </div>
 
@@ -535,8 +539,8 @@ export function JobsPage() {
 
                 <div className="jobs-details-modal__meta">
                   <span className={`status-pill status-pill--${getScoreTone(selectedJob.score)}`}>{getScoreLabel(selectedJob.score)}</span>
-                  <span className="jobs-job-card__meta-item">{getJobModelLabel(selectedJob.job.model)}</span>
-                  <span className="jobs-job-card__meta-item">{selectedJob.job.location ?? "Local flexível"}</span>
+                  <span className="jobs-job-card__meta-item">💻 {getJobModelLabel(selectedJob.job.model)}</span>
+                  <span className="jobs-job-card__meta-item">📍 {selectedJob.job.location ?? "Local flexível"}</span>
                 </div>
 
                 <div className={`jobs-job-card__score jobs-job-card__score--${getScoreTone(selectedJob.score)}`}>
@@ -552,15 +556,15 @@ export function JobsPage() {
                 <div className="jobs-details-modal__section">
                   <span className="panel__label">Skills</span>
                   <div className="skill-tags">
-                    {selectedJob.job.skills.map((skill) => (
-                      <span key={skill} className="skill-tag">{skill}</span>
+                    {selectedJob.job.skills.map((skill, index) => (
+                      <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>{skill}</span>
                     ))}
                   </div>
                 </div>
 
                 <div className="jobs-details-modal__details">
-                  <span><strong>Curso:</strong> {selectedJob.job.course ?? "Sem requisito específico"}</span>
-                  <span><strong>Disponibilidade:</strong> {getAvailabilityLabel(selectedJob.job.availability)}</span>
+                  <span>🎓 <strong>Curso:</strong> {selectedJob.job.course ?? "Sem requisito específico"}</span>
+                  <span>🗓️ <strong>Disponibilidade:</strong> {getAvailabilityLabel(selectedJob.job.availability)}</span>
                 </div>
 
                 <div className="jobs-job-card__match-box">

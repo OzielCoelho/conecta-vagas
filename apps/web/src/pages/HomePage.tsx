@@ -12,18 +12,19 @@ import showcaseImage1 from "../imagens/Captura de tela 2026-05-18 205107.png";
 import showcaseImage2 from "../imagens/Captura de tela 2026-05-18 205308.png";
 import networkingHeroImage from "../imagens/HD-wallpaper-social-networks-blue-digital-background-networking-concepts-blue-networking-background-technology-background.jpg";
 import supportImage from "../imagens/The-power-of-networking-640x333.webp";
-import estagiosImage from "../imagens/estagios.png";
 import slideImage from "../imagens/slide_32.png";
 
 const audienceCards = [
   {
     label: "Para candidatos",
+    icon: "🎓",
     title: "Organize sua busca por estágio e acompanhe cada passo.",
     image: showcaseImage1,
     points: ["Monte um perfil direto", "Descubra vagas compatíveis", "Acompanhe seus envios"],
   },
   {
     label: "Para empresas",
+    icon: "🏢",
     title: "Publique vagas e centralize candidatos em um painel visual.",
     image: showcaseImage2,
     points: ["Crie vagas com rapidez", "Compare perfis com mais contexto", "Acompanhe candidaturas"],
@@ -33,16 +34,19 @@ const audienceCards = [
 const publicSteps = [
   {
     step: "01",
+    icon: "📝",
     title: "Monte seu perfil",
     description: "Organize dados e habilidades em poucos passos.",
   },
   {
     step: "02",
+    icon: "🎯",
     title: "Encontre compatibilidade",
     description: "Veja vagas e perfis com mais aderência.",
   },
   {
     step: "03",
+    icon: "📈",
     title: "Acompanhe o processo",
     description: "Mantenha o andamento visível do início ao fim.",
   },
@@ -51,20 +55,25 @@ const publicSteps = [
 const showcaseCards = [
   {
     title: "Painel de vagas",
+    icon: "💼",
     description: "Visualize oportunidades e filtros com rapidez.",
     image: slideImage,
   },
   {
     title: "Perfil padronizado",
+    icon: "👤",
     description: "Apresente informações importantes com mais clareza.",
     image: carouselImage3,
   },
   {
     title: "Pipeline de acompanhamento",
+    icon: "🔄",
     description: "Entenda status e próximos passos em uma única visão.",
     image: showcaseImage2,
   },
 ];
+
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
 
 const carouselImages = [
   { src: carouselImage1, alt: "Visão geral da plataforma" },
@@ -134,9 +143,6 @@ export function HomePage() {
 
       <section className="panel panel--hero public-home-hero public-home-hero--split">
         <div className="public-home-hero__content">
-          <div className="public-home-hero__content-art" aria-hidden="true">
-            <img src={estagiosImage} alt="" loading="lazy" />
-          </div>
           <span className="page-eyebrow">Conecta Vagas</span>
           <h1>Conecte candidatos, empresas e oportunidades em um só lugar.</h1>
 
@@ -207,11 +213,11 @@ export function HomePage() {
               <img src={item.image} alt={item.title} loading="lazy" />
             </div>
             <div className="public-home-audience-card__content">
-              <span className="panel__label">{item.label}</span>
+              <span className="panel__label"><span className="home-icon" aria-hidden="true">{item.icon}</span> {item.label}</span>
               <h2>{item.title}</h2>
               <div className="public-home-audience-card__points">
-                {item.points.map((point) => (
-                  <span key={point} className="skill-tag">{point}</span>
+                {item.points.map((point, index) => (
+                  <span key={point} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>{point}</span>
                 ))}
               </div>
             </div>
@@ -226,7 +232,7 @@ export function HomePage() {
               <img src={item.image} alt={item.title} loading="lazy" />
             </div>
             <div className="public-home-career-card__content">
-              <h2>{item.title}</h2>
+              <h2><span className="home-icon" aria-hidden="true">{item.icon}</span> {item.title}</h2>
               <p>{item.description}</p>
             </div>
           </article>
@@ -265,7 +271,7 @@ export function HomePage() {
           {publicSteps.map((item) => (
             <article key={item.step} className="public-home-journey-card">
               <span className="public-home-journey-card__step">{item.step}</span>
-              <h3>{item.title}</h3>
+              <h3><span className="home-icon" aria-hidden="true">{item.icon}</span> {item.title}</h3>
               <p>{item.description}</p>
             </article>
           ))}

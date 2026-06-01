@@ -55,6 +55,7 @@ export class MatchService {
     return prisma.application.update({
       where: { id: applicationId },
       data: { score },
+      include: { job: true },
     });
   }
 

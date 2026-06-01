@@ -63,15 +63,6 @@ const companyMenuItems: SidebarMenuItem[] = [
     ),
   },
   {
-    to: "/empresa/vagas",
-    label: "Minhas vagas",
-    icon: (
-      <svg viewBox="0 0 24 24" focusable="false">
-        <path d="M9 6V4.5h6V6h4A1.5 1.5 0 0 1 20.5 7.5v10A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 5 6Zm1.5 0h3V6h-3Zm-5 4v7.5H19V10Z" fill="currentColor" />
-      </svg>
-    ),
-  },
-  {
     to: "/empresa/candidatos",
     label: "Candidatos",
     icon: (

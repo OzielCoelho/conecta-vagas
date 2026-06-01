@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { StudentProfileForm, type StudentProfileFormValues } from "../components/profile/StudentProfileForm";
 import { useAuth } from "../auth/AuthProvider";
 import {
@@ -7,6 +7,9 @@ import {
   updateStudentProfile,
   type StudentProfile,
 } from "../services/students";
+import { readImageAsCompressedDataUrl } from "../utils/image";
+
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
 
 function getInitials(name: string) {
   return name
@@ -71,8 +74,8 @@ function CandidatePreviewCompact({ profile }: { profile: StudentProfile }) {
       {hasText(profile.summary) ? <p>{profile.summary}</p> : null}
       {profile.skills.length ? (
         <div className="feed-card__chips">
-          {profile.skills.slice(0, 4).map((skill) => (
-            <span key={skill} className="skill-tag">{skill}</span>
+          {profile.skills.slice(0, 4).map((skill, index) => (
+            <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>{skill}</span>
           ))}
         </div>
       ) : null}
@@ -126,8 +129,8 @@ function CandidatePreviewDetailed({ profile }: { profile: StudentProfile }) {
       </div>
       {profile.skills.length ? (
         <div className="skill-tags">
-          {profile.skills.map((skill) => (
-            <span key={skill} className="skill-tag">{skill}</span>
+          {profile.skills.map((skill, index) => (
+            <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>{skill}</span>
           ))}
         </div>
       ) : null}
@@ -145,7 +148,9 @@ export function StudentProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState("");
-  const avatarUploadButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoMessage, setPhotoMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const avatarPhotoInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -167,6 +172,53 @@ export function StudentProfilePage() {
         setIsLoading(false);
       });
   }, [token]);
+
+  async function handleAvatarPhotoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    if (!token || !profileId || !profile) {
+      setPhotoMessage({ type: "error", text: "Perfil indisponível no momento." });
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setPhotoMessage({ type: "error", text: "Selecione um arquivo de imagem válido." });
+      return;
+    }
+
+    if (file.size > 25 * 1024 * 1024) {
+      setPhotoMessage({ type: "error", text: "A imagem é muito grande. Selecione uma imagem de até 25MB." });
+      return;
+    }
+
+    setPhotoMessage(null);
+    setIsUploadingPhoto(true);
+
+    try {
+      const nextPhotoUrl = await readImageAsCompressedDataUrl(file);
+      const updatedProfile = await updateStudentProfile(profileId, { photoUrl: nextPhotoUrl }, token);
+
+      setProfile(updatedProfile);
+      setInitialValues(getProfileFormValues(updatedProfile));
+      setPreviewPhotoUrl(updatedProfile.photoUrl ?? "");
+
+      if (user) {
+        setUser({ ...user, avatarUrl: updatedProfile.photoUrl ?? undefined });
+      }
+
+      setPhotoMessage({ type: "success", text: "Foto de perfil atualizada." });
+    } catch (uploadError) {
+      setPhotoMessage({
+        type: "error",
+        text: uploadError instanceof Error ? uploadError.message : "Não foi possível atualizar a foto.",
+      });
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
 
   async function handleSubmit(data: Parameters<typeof updateStudentProfile>[1]) {
     if (!token || !profileId) {
@@ -233,23 +285,46 @@ export function StudentProfilePage() {
         <div className="profile-main-stack profile-main-stack--wide">
           <section className="panel profile-hero-card profile-hero-card--refined profile-hero-card--student-modern profile-hero-card--interactive">
             <div className="profile-hero-card__media profile-hero-card__media--student">
-              <button
-                ref={avatarUploadButtonRef}
-                className="profile-avatar profile-avatar--button profile-avatar--xl"
-                type="button"
-                onClick={() => document.getElementById("student-photo-upload-trigger")?.click()}
-              >
-                {currentPhotoUrl ? (
-                  <img
-                    className="profile-avatar profile-avatar--image profile-avatar--xl"
-                    src={currentPhotoUrl}
-                    alt={`Foto de ${profile.name}`}
-                  />
-                ) : (
-                  <span>{getInitials(profile.name)}</span>
-                )}
-                <span className="profile-avatar__edit-badge">Trocar foto</span>
-              </button>
+              <div className="profile-avatar-control">
+                <button
+                  className="profile-avatar profile-avatar--button profile-avatar--xl"
+                  type="button"
+                  onClick={() => avatarPhotoInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                >
+                  {currentPhotoUrl ? (
+                    <img
+                      className="profile-avatar profile-avatar--image profile-avatar--xl"
+                      src={currentPhotoUrl}
+                      alt={`Foto de ${profile.name}`}
+                    />
+                  ) : (
+                    <span>{getInitials(profile.name)}</span>
+                  )}
+                  <span className="profile-avatar__edit-badge">{isUploadingPhoto ? "Enviando..." : "Trocar foto"}</span>
+                </button>
+
+                <input
+                  ref={avatarPhotoInputRef}
+                  className="profile-form__file-input"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarPhotoChange}
+                />
+
+                <button
+                  className="secondary-button profile-avatar-control__button"
+                  type="button"
+                  onClick={() => avatarPhotoInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                >
+                  {isUploadingPhoto ? "Enviando..." : "Trocar foto de perfil"}
+                </button>
+
+                {photoMessage ? (
+                  <p className={photoMessage.type === "success" ? "form-success" : "form-error"}>{photoMessage.text}</p>
+                ) : null}
+              </div>
 
               <div className="profile-hero-card__info">
                 <span className="panel__label">Candidato</span>
@@ -289,8 +364,8 @@ export function StudentProfilePage() {
                 <span className="panel__label">Habilidades</span>
                 <h2>Skills em destaque</h2>
                 <div className="skill-tags">
-                  {profile.skills.map((skill) => (
-                    <span key={skill} className="skill-tag">{skill}</span>
+                  {profile.skills.map((skill, index) => (
+                    <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>{skill}</span>
                   ))}
                 </div>
               </article>

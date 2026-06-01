@@ -4,6 +4,7 @@ import {
   type AvailabilityOption,
   type CreateStudentProfileInput,
 } from "../../services/students";
+import { readImageAsCompressedDataUrl } from "../../utils/image";
 
 export type StudentProfileFormValues = {
   firstName: string;
@@ -50,15 +51,6 @@ const defaultValues: StudentProfileFormValues = {
 
 function buildFullName(firstName: string, lastName: string) {
   return [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
-}
-
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-    reader.onerror = () => reject(new Error("Não foi possível carregar a imagem selecionada."));
-    reader.readAsDataURL(file);
-  });
 }
 
 export function StudentProfileForm({
@@ -119,21 +111,26 @@ export function StudentProfileForm({
 
     if (!file.type.startsWith("image/")) {
       setPhotoError("Selecione um arquivo de imagem válido.");
+      event.target.value = "";
       return;
     }
 
-    if (file.size > 1500 * 1024) {
-      setPhotoError("A imagem é muito grande. Selecione outra imagem com no máximo 1,5MB.");
+    if (file.size > 25 * 1024 * 1024) {
+      setPhotoError("A imagem é muito grande. Selecione uma imagem de até 25MB.");
+      event.target.value = "";
       return;
     }
 
     try {
-      const nextPhotoUrl = await readFileAsDataUrl(file);
+      const nextPhotoUrl = await readImageAsCompressedDataUrl(file);
       setPhotoUrl(nextPhotoUrl);
       setPhotoError(null);
       onPhotoChange?.(nextPhotoUrl);
     } catch (uploadError) {
       setPhotoError(uploadError instanceof Error ? uploadError.message : "Não foi possível carregar a imagem.");
+    } finally {
+      // Permite reselecionar o mesmo arquivo (o onChange não dispara para o mesmo value).
+      event.target.value = "";
     }
   }
 
@@ -187,7 +184,7 @@ export function StudentProfileForm({
         />
         <div>
           <strong>Foto do perfil</strong>
-          <p className="profile-form__hint">Clique no avatar para enviar uma imagem de até 1,5MB.</p>
+          <p className="profile-form__hint">Clique no avatar para enviar uma foto. A imagem é ajustada automaticamente.</p>
           {photoError ? <p className="form-error">{photoError}</p> : null}
         </div>
       </div>

@@ -3,12 +3,26 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import {
   getApplicationStatusLabel,
-  getApplicationStatusTone,
   getMyApplications,
+  type ApplicationStatus,
   type StudentApplication,
 } from "../services/applications";
-import { getJobs, type JobItem } from "../services/jobs";
+import { getJobs, getJobModelLabel, type JobItem } from "../services/jobs";
 import { getMyStudentProfile } from "../services/students";
+
+const pipelineStages: Array<{ key: ApplicationStatus; label: string }> = [
+  { key: "SENT", label: "Enviado" },
+  { key: "UNDER_REVIEW", label: "Em análise" },
+  { key: "INTERVIEW", label: "Entrevista" },
+  { key: "APPROVED", label: "Aprovado" },
+];
+
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
+
+function getStageIndex(status: ApplicationStatus) {
+  if (status === "REJECTED") return -1;
+  return pipelineStages.findIndex((stage) => stage.key === status);
+}
 
 export function StudentDashboardPage() {
   const navigate = useNavigate();
@@ -48,32 +62,44 @@ export function StudentDashboardPage() {
         label: "Candidaturas ativas",
         value: String(applications.filter((item) => item.status !== "REJECTED" && item.status !== "APPROVED").length),
         helper: "Processos acompanhados em tempo real",
+        tone: "blue" as const,
+        icon: "📨",
       },
       {
-        label: "Perfil completo",
-        value: profileComplete ? "100%" : "0%",
-        helper: "Quanto melhor o perfil, melhor o matching",
+        label: "Entrevistas",
+        value: String(applications.filter((item) => item.status === "INTERVIEW").length),
+        helper: "Convites recebidos das empresas",
+        tone: "violet" as const,
+        icon: "🎤",
+      },
+      {
+        label: "Aprovações",
+        value: String(applications.filter((item) => item.status === "APPROVED").length),
+        helper: "Candidaturas que avançaram",
+        tone: "emerald" as const,
+        icon: "🏆",
       },
       {
         label: "Vagas disponíveis",
         value: String(jobs.length),
-        helper: "Oportunidades carregadas do backend",
+        helper: "Oportunidades para explorar",
+        tone: "amber" as const,
+        icon: "✨",
       },
     ],
-    [applications, jobs.length, profileComplete]
+    [applications, jobs.length]
   );
 
-  const recentStatuses = applications.slice(0, 3);
+  const recentStatuses = applications.slice(0, 4);
   const recommendedJobs = jobs.slice(0, 3);
 
   if (isLoading) {
     return (
-      <section className="page-section student-dashboard-page">
-        <header className="page-header student-dashboard-page__header">
+      <section className="page-section dashboard-page">
+        <header className="dashboard-hero dashboard-hero--student">
           <div>
-            <span className="page-eyebrow">Dashboard do Candidato</span>
-            <h1>Seu centro de empregabilidade e acompanhamento de carreira.</h1>
-            <p>Carregando dados reais do seu painel...</p>
+            <span className="dashboard-hero__eyebrow">Dashboard do Candidato</span>
+            <h1>Carregando seu painel...</h1>
           </div>
         </header>
       </section>
@@ -81,113 +107,131 @@ export function StudentDashboardPage() {
   }
 
   return (
-    <section className="page-section student-dashboard-page">
-      <header className="page-header student-dashboard-page__header">
-        <div>
-          <span className="page-eyebrow">Dashboard do Candidato</span>
-          <h1>Seu centro de empregabilidade e acompanhamento de carreira.</h1>
-          <p>
-            Acompanhe o status real das suas candidaturas, mantenha o perfil padronizado atualizado e descubra
-            vagas com maior matching score.
-          </p>
+    <section className="page-section dashboard-page">
+      <header className="dashboard-hero dashboard-hero--student">
+        <div className="dashboard-hero__copy">
+          <span className="dashboard-hero__eyebrow">Dashboard do Candidato</span>
+          <h1>Olá{user?.firstName ? `, ${user.firstName}` : ""}! Acompanhe sua jornada.</h1>
+          <p>Veja o andamento das suas candidaturas e descubra vagas com maior aderência ao seu perfil.</p>
         </div>
-        {!profileComplete ? (
-          <button
-            className="primary-button"
-            type="button"
-            onClick={() => {
-              navigate("/completar-perfil/aluno");
-            }}
-          >
-            Completar perfil
-          </button>
-        ) : null}
+        <div className="dashboard-hero__actions">
+          {!profileComplete ? (
+            <button className="dashboard-hero__button" type="button" onClick={() => navigate("/completar-perfil/aluno")}>
+              Completar perfil
+            </button>
+          ) : (
+            <Link className="dashboard-hero__button" to="/vagas">
+              Explorar vagas
+            </Link>
+          )}
+        </div>
       </header>
 
-      <section className="student-dashboard-page__summary content-grid content-grid--three">
+      <section className="dashboard-stats">
         {summary.map((item) => (
-          <article key={item.label} className="panel student-summary-card">
-            <span className="panel__label">{item.label}</span>
-            <strong>{item.value}</strong>
-            <p>{item.helper}</p>
+          <article key={item.label} className={`dashboard-stat dashboard-stat--${item.tone}`}>
+            <span className="dashboard-stat__icon" aria-hidden="true">{item.icon}</span>
+            <div className="dashboard-stat__body">
+              <span className="dashboard-stat__label">{item.label}</span>
+              <strong className="dashboard-stat__value">{item.value}</strong>
+              <span className="dashboard-stat__helper">{item.helper}</span>
+            </div>
           </article>
         ))}
       </section>
 
-      <section className="student-dashboard-layout student-dashboard-layout--refined">
-        <article className="panel student-dashboard-card student-dashboard-card--timeline">
-          <div className="student-dashboard-card__header">
+      <section className="dashboard-grid dashboard-grid--student">
+        <article className="panel dashboard-card dashboard-card--timeline">
+          <div className="dashboard-card__header">
             <div>
-              <span className="panel__label">Acompanhamento de status</span>
-              <h2>Veja em que etapa cada candidatura está</h2>
+              <span className="panel__label">Linha do tempo</span>
+              <h2>Andamento das suas candidaturas</h2>
             </div>
-            <Link className="secondary-button" to="/perfil/aluno/candidaturas">
-              Ver candidaturas
-            </Link>
+            <Link className="secondary-button" to="/perfil/aluno/candidaturas">Ver todas</Link>
           </div>
 
-          <div className="timeline-list timeline-list--dashboard">
-            {recentStatuses.length ? recentStatuses.map((item) => (
-              <div key={item.id} className={`timeline-list__item timeline-list__item--${getApplicationStatusTone(item.status)}`}>
-                <span className="timeline-list__dot" aria-hidden="true" />
-                <div>
-                  <strong>{item.job.title}</strong>
-                  <p>{getApplicationStatusLabel(item.status)}</p>
+          <div className="pipeline-list">
+            {recentStatuses.length ? recentStatuses.map((item) => {
+              const stageIndex = getStageIndex(item.status);
+              const rejected = item.status === "REJECTED";
+
+              return (
+                <div key={item.id} className="pipeline-item">
+                  <div className="pipeline-item__top">
+                    <strong>{item.job.title}</strong>
+                    <span className={`pipeline-badge pipeline-badge--${rejected ? "rejected" : item.status.toLowerCase()}`}>
+                      {getApplicationStatusLabel(item.status)}
+                    </span>
+                  </div>
+                  <div className={`pipeline-track${rejected ? " pipeline-track--rejected" : ""}`}>
+                    {pipelineStages.map((stage, index) => {
+                      const reached = !rejected && index <= stageIndex;
+                      return (
+                        <div key={stage.key} className={`pipeline-step${reached ? " pipeline-step--done" : ""}`}>
+                          <span className="pipeline-step__dot" aria-hidden="true" />
+                          <span className="pipeline-step__label">{stage.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )) : (
-              <p>Você ainda não possui candidaturas ativas.</p>
+              );
+            }) : (
+              <p className="dashboard-empty">Você ainda não possui candidaturas. Explore as vagas e candidate-se!</p>
             )}
           </div>
         </article>
 
-        <article className="panel student-dashboard-card student-profile-cta-card student-profile-cta-card--refined">
-          <div className="student-dashboard-card__header">
-            <div>
-              <span className="panel__label">Perfil padronizado</span>
-              <h2>Atualize habilidades, curso e disponibilidade</h2>
+        <article className="panel dashboard-card dashboard-card--profile">
+          <span className="panel__label">Perfil</span>
+          <div className="dashboard-progress">
+            <div className="dashboard-progress__ring" style={{ ["--value" as string]: profileComplete ? "100" : "40" }}>
+              <span>{profileComplete ? "100%" : "40%"}</span>
             </div>
-            <Link className="primary-button" to="/perfil/aluno">
-              Editar perfil
-            </Link>
+            <div>
+              <h2>{profileComplete ? "Perfil completo!" : "Complete seu perfil"}</h2>
+              <p>Quanto mais estruturado, melhor o matching com as vagas.</p>
+            </div>
           </div>
-          <p>
-            Quanto mais estruturado o seu perfil, mais transparente fica o processo e melhores são as recomendações.
-          </p>
-          <div className="student-profile-cta-card__tags">
-            <span className="skill-tag">Skills atualizadas</span>
-            <span className="skill-tag">Curso validado</span>
-            <span className="skill-tag">Disponibilidade alinhada</span>
+          <div className="dashboard-tags">
+            <span className="feed-chip feed-chip--blue">Skills</span>
+            <span className="feed-chip feed-chip--violet">Curso</span>
+            <span className="feed-chip feed-chip--emerald">Disponibilidade</span>
           </div>
+          <Link className="primary-button" to="/perfil/aluno">Editar perfil</Link>
         </article>
       </section>
 
-      <section className="panel student-dashboard-card student-recommendations-card student-recommendations-card--refined">
-        <div className="student-dashboard-card__header">
+      <section className="panel dashboard-card dashboard-card--recommend">
+        <div className="dashboard-card__header">
           <div>
             <span className="panel__label">Vagas recomendadas</span>
-            <h2>Oportunidades disponíveis para você explorar</h2>
+            <h2>Oportunidades para o seu perfil</h2>
           </div>
-          <Link className="secondary-button" to="/vagas">
-            Explorar vagas
-          </Link>
+          <Link className="secondary-button" to="/vagas">Ver mais</Link>
         </div>
 
-        <div className="student-recommendations-grid student-recommendations-grid--refined">
+        <div className="dashboard-recommend-grid">
           {recommendedJobs.length ? recommendedJobs.map((job, index) => (
-            <article key={job.id} className="student-recommendation-card student-recommendation-card--refined">
-              <div className="student-recommendation-card__top">
-                <div>
-                  <span className="panel__label">Top {index + 1}</span>
-                  <strong>{job.title}</strong>
-                  <p>{job.company?.name ?? "Empresa parceira"}</p>
-                </div>
-                <span className="status-pill status-pill--highlight">{job.model}</span>
+            <article key={job.id} className="dashboard-recommend-card">
+              <div className="dashboard-recommend-card__top">
+                <span className="dashboard-recommend-card__rank">#{index + 1}</span>
+                <span className="status-pill status-pill--highlight">{getJobModelLabel(job.model)}</span>
               </div>
-              <p>{job.description}</p>
+              <strong>{job.title}</strong>
+              <p className="dashboard-recommend-card__company">{job.company?.name ?? "Empresa parceira"}</p>
+              {job.skills.length ? (
+                <div className="dashboard-tags">
+                  {job.skills.slice(0, 3).map((skill, skillIndex) => (
+                    <span key={skill} className={`feed-chip feed-chip--${skillChipTones[skillIndex % skillChipTones.length]}`}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
             </article>
           )) : (
-            <p>Nenhuma vaga disponível no momento.</p>
+            <p className="dashboard-empty">Nenhuma vaga disponível no momento.</p>
           )}
         </div>
       </section>

@@ -34,6 +34,15 @@ function getCandidatePhoto(application: CompanyApplication) {
   return application.student.photoUrl || candidatePhotoByName[normalizedName];
 }
 
+function getScoreTone(score: number) {
+  if (score >= 75) return "high";
+  if (score >= 50) return "medium";
+  if (score >= 25) return "low";
+  return "weak";
+}
+
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
+
 export function CompanyCandidatesPage() {
   const { token, user } = useAuth();
   const [jobs, setJobs] = useState<JobItem[]>([]);
@@ -248,12 +257,20 @@ export function CompanyCandidatesPage() {
                       <strong>{application.student.name}</strong>
                       <p>{application.student.course}</p>
                       <span>{formatAvailabilityList(application.student.availability)}</span>
+                      {application.student.skills.length ? (
+                        <div className="company-candidate-card__skills">
+                          {application.student.skills.slice(0, 4).map((skill, skillIndex) => (
+                            <span key={skill} className={`feed-chip feed-chip--${skillChipTones[skillIndex % skillChipTones.length]}`}>
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                   </div>
 
-                  <div className="company-candidate-card__fit company-candidate-card__fit--refined">
+                  <div className={`company-candidate-card__fit company-candidate-card__fit--refined company-candidate-card__fit--${getScoreTone(application.score)}`}>
                     <strong>{application.score}%</strong>
-                    <span>{getApplicationStatusLabel(application.status)}</span>
                   </div>
 
                   <div className="company-candidate-card__meta">
@@ -266,22 +283,22 @@ export function CompanyCandidatesPage() {
                       </button>
                       {canReject ? (
                         <button
-                          className="secondary-button"
+                          className="candidate-action candidate-action--reject"
                           type="button"
                           disabled={isCurrentApplicationUpdating}
                           onClick={() => void handleStatusUpdate(application, "REJECTED")}
                         >
-                          {isCurrentApplicationUpdating ? "Atualizando..." : "Recusar"}
+                          {isCurrentApplicationUpdating ? "Atualizando..." : "✕ Recusar"}
                         </button>
                       ) : null}
                       {canAdvance ? (
                         <button
-                          className="primary-button"
+                          className="candidate-action candidate-action--advance"
                           type="button"
                           disabled={isCurrentApplicationUpdating}
                           onClick={() => void handleStatusUpdate(application, nextStatus)}
                         >
-                          {isCurrentApplicationUpdating ? "Atualizando..." : getAdvanceActionLabel(application.status)}
+                          {isCurrentApplicationUpdating ? "Atualizando..." : `→ ${getAdvanceActionLabel(application.status)}`}
                         </button>
                       ) : null}
                     </div>
@@ -319,9 +336,11 @@ export function CompanyCandidatesPage() {
                     <strong>{selectedApplication.score}%</strong>
                   </div>
                 </div>
-                <div className="skill-tags">
-                  {selectedApplication.student.skills.map((skill) => (
-                    <span key={skill} className="skill-tag">{skill}</span>
+                <div className="skill-tags skill-tags--colored">
+                  {selectedApplication.student.skills.map((skill, index) => (
+                    <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>
+                      {skill}
+                    </span>
                   ))}
                 </div>
               </div>
