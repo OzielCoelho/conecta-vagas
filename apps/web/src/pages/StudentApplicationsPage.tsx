@@ -5,8 +5,23 @@ import {
   getApplicationStatusLabel,
   getApplicationStatusTone,
   getMyApplications,
+  type ApplicationStatus,
   type StudentApplication,
 } from "../services/applications";
+
+const pipelineStages: Array<{ key: ApplicationStatus; label: string }> = [
+  { key: "SENT", label: "Enviado" },
+  { key: "UNDER_REVIEW", label: "Em análise" },
+  { key: "INTERVIEW", label: "Entrevista" },
+  { key: "APPROVED", label: "Aprovado" },
+];
+
+const skillChipTones = ["blue", "violet", "emerald", "amber", "rose", "cyan"] as const;
+
+function getStageIndex(status: ApplicationStatus) {
+  if (status === "REJECTED") return -1;
+  return pipelineStages.findIndex((stage) => stage.key === status);
+}
 
 export function StudentApplicationsPage() {
   const { token, user } = useAuth();
@@ -106,48 +121,65 @@ export function StudentApplicationsPage() {
         </section>
       ) : (
         <section className="student-applications-list">
-          {orderedApplications.map((application) => (
-            <article key={application.id} className="panel student-application-card">
-              <div className="student-application-card__header">
-                <div>
-                  <span className="panel__label">{application.job.company?.name ?? "Empresa parceira"}</span>
-                  <h2>{application.job.title}</h2>
-                  <p>{application.job.location ?? "Local flexível"} • {application.job.model}</p>
-                </div>
-                <span className={`status-pill status-pill--${getApplicationStatusTone(application.status)}`}>
-                  {getApplicationStatusLabel(application.status)}
-                </span>
-              </div>
+          {orderedApplications.map((application) => {
+            const stageIndex = getStageIndex(application.status);
+            const rejected = application.status === "REJECTED";
 
-              <div className="student-application-card__summary">
-                <div>
-                  <strong>{application.score}%</strong>
-                  <span>Score desta candidatura</span>
+            return (
+              <article key={application.id} className="panel student-application-card">
+                <div className="student-application-card__header">
+                  <div>
+                    <span className="panel__label">🏢 {application.job.company?.name ?? "Empresa parceira"}</span>
+                    <h2>{application.job.title}</h2>
+                    <p>📍 {application.job.location ?? "Local flexível"} • 💻 {application.job.model}</p>
+                  </div>
+                  <span className={`status-pill status-pill--${getApplicationStatusTone(application.status)}`}>
+                    {getApplicationStatusLabel(application.status)}
+                  </span>
                 </div>
-                <div>
-                  <strong>{new Date(application.updatedAt).toLocaleDateString("pt-BR")}</strong>
-                  <span>Última atualização</span>
-                </div>
-                <div>
-                  <strong>{application.job.course ?? "Sem requisito específico"}</strong>
-                  <span>Curso relacionado</span>
-                </div>
-              </div>
 
-              <div className="skill-tags">
-                {application.job.skills.map((skill) => (
-                  <span key={skill} className="skill-tag">{skill}</span>
-                ))}
-              </div>
+                <div className={`pipeline-track${rejected ? " pipeline-track--rejected" : ""}`}>
+                  {pipelineStages.map((stage, index) => {
+                    const reached = !rejected && index <= stageIndex;
+                    return (
+                      <div key={stage.key} className={`pipeline-step${reached ? " pipeline-step--done" : ""}`}>
+                        <span className="pipeline-step__dot" aria-hidden="true" />
+                        <span className="pipeline-step__label">{stage.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
 
-              <div className="student-application-card__footer">
-                <p>{application.job.description}</p>
-                <Link className="secondary-button" to="/vagas">
-                  Ver vaga
-                </Link>
-              </div>
-            </article>
-          ))}
+                <div className="student-application-card__summary">
+                  <div>
+                    <strong>{application.score}%</strong>
+                    <span>📊 Score desta candidatura</span>
+                  </div>
+                  <div>
+                    <strong>{new Date(application.updatedAt).toLocaleDateString("pt-BR")}</strong>
+                    <span>🕒 Última atualização</span>
+                  </div>
+                  <div>
+                    <strong>{application.job.course ?? "Sem requisito específico"}</strong>
+                    <span>🎓 Curso relacionado</span>
+                  </div>
+                </div>
+
+                <div className="skill-tags">
+                  {application.job.skills.map((skill, index) => (
+                    <span key={skill} className={`feed-chip feed-chip--${skillChipTones[index % skillChipTones.length]}`}>{skill}</span>
+                  ))}
+                </div>
+
+                <div className="student-application-card__footer">
+                  <p>{application.job.description}</p>
+                  <Link className="secondary-button" to="/vagas">
+                    Ver vaga
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </section>
       )}
     </section>

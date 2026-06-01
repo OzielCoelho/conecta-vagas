@@ -76,17 +76,20 @@ export function SettingsPage() {
       </header>
 
       <section className="content-grid content-grid--three settings-page__grid">
-        <article className="panel settings-card settings-card--interactive">
+        <article className="panel settings-card settings-card--interactive settings-card--blue">
+          <span className="settings-card__icon" aria-hidden="true">🪪</span>
           <span className="panel__label">Perfil de acesso</span>
           <strong>{user?.name ?? user?.email ?? "Usuário"}</strong>
           <p>{user?.role === "COMPANY" ? "Conta vinculada a empresa" : user?.role === "STUDENT" ? "Conta vinculada a candidato" : "Conta de coordenação"}</p>
         </article>
-        <article className="panel settings-card settings-card--interactive">
+        <article className="panel settings-card settings-card--interactive settings-card--violet">
+          <span className="settings-card__icon" aria-hidden="true">✉️</span>
           <span className="panel__label">Email atual</span>
           <strong>{user?.email ?? "Não disponível"}</strong>
           <p>Usado para login e recuperação de acesso.</p>
         </article>
-        <article className="panel settings-card settings-card--interactive">
+        <article className="panel settings-card settings-card--interactive settings-card--emerald">
+          <span className="settings-card__icon" aria-hidden="true">🔒</span>
           <span className="panel__label">Segurança</span>
           <strong>Senha protegida</strong>
           <p>Troque sua senha sempre que precisar reforçar a segurança da conta.</p>
