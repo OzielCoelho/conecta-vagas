@@ -4,23 +4,28 @@ export class MatchService {
   calculateScore(
     studentSkills: string[],
     studentCourse: string,
-    studentAvailability: string,
+    studentAvailability: string[],
     jobSkills: string[],
     jobCourse: string | null,
     jobAvailability: string | null
   ): number {
     let score = 0;
 
-    const matchedSkills = studentSkills.filter((skill) =>
-      jobSkills.map((s) => s.toLowerCase()).includes(skill.toLowerCase())
-    );
-    score += (matchedSkills.length / jobSkills.length) * 60;
+    const normalizedJobSkills = jobSkills.map((skill) => skill.toLowerCase());
+    const matchedSkills = studentSkills.filter((skill) => normalizedJobSkills.includes(skill.toLowerCase()));
+
+    if (jobSkills.length > 0) {
+      score += (matchedSkills.length / jobSkills.length) * 60;
+    }
 
     if (jobCourse && studentCourse.toLowerCase() === jobCourse.toLowerCase()) {
       score += 25;
     }
 
-    if (jobAvailability && studentAvailability.toLowerCase() === jobAvailability.toLowerCase()) {
+    if (
+      jobAvailability &&
+      studentAvailability.some((availability) => availability.toLowerCase() === jobAvailability.toLowerCase())
+    ) {
       score += 15;
     }
 
@@ -50,6 +55,7 @@ export class MatchService {
     return prisma.application.update({
       where: { id: applicationId },
       data: { score },
+      include: { job: true },
     });
   }
 
@@ -92,5 +98,4 @@ export class MatchService {
       orderBy: { score: "desc" },
     });
   }
-  
 }

@@ -7,13 +7,26 @@ import { studentRoutes } from "./modules/students/student.routes";
 import { jobRoutes } from "./modules/jobs/job.routes";
 import { companyRoutes } from "./modules/companies/company.routes";
 import { applicationRoutes } from "./modules/applications/application.routes";
+import { notificationRoutes } from "./modules/notifications/notification.routes";
 import { AppError } from "./shared/errors/app.error";
 
-const app = Fastify({ logger: true });
+const jwtSecret = process.env.JWT_SECRET;
 
-app.register(fastifyCors, { origin: true });
+if (!jwtSecret) {
+  throw new Error("JWT_SECRET não configurado.");
+}
+
+const app = Fastify({
+  logger: true,
+  bodyLimit: 4 * 1024 * 1024,
+});
+
+app.register(fastifyCors, {
+  origin: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+});
 app.register(fastifyJwt, {
-  secret: process.env.JWT_SECRET ?? "secret_dev",
+  secret: jwtSecret,
 });
 
 app.register(userRoutes, { prefix: "/users" });
@@ -21,10 +34,37 @@ app.register(studentRoutes, { prefix: "/students" });
 app.register(jobRoutes, { prefix: "/jobs" });
 app.register(companyRoutes, { prefix: "/companies" });
 app.register(applicationRoutes, { prefix: "/applications" });
+app.register(notificationRoutes, { prefix: "/notifications" });
+
+function isValidationError(error: unknown): error is Error & { validation: unknown[] } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "validation" in error &&
+    Array.isArray((error as { validation?: unknown }).validation)
+  );
+}
+
+function isBodyTooLargeError(error: unknown): error is Error & { code: string } {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "FST_ERR_CTP_BODY_TOO_LARGE"
+  );
+}
 
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {
     return reply.status(error.statusCode).send({ message: error.message });
+  }
+
+  if (isValidationError(error) && error.validation.length > 0) {
+    return reply.status(400).send({ message: error.message });
+  }
+
+  if (isBodyTooLargeError(error)) {
+    return reply.status(413).send({ message: "A imagem enviada é muito grande. Tente uma imagem menor." });
   }
 
   app.log.error(error);

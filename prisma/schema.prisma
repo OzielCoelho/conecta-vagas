@@ -27,16 +27,35 @@ enum JobModel {
   HYBRID
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum NotificationType {
+  APPLICATION_CREATED
+  APPLICATION_STATUS_UPDATED
+  JOB_CREATED
+  JOB_UPDATED
+  PROFILE_CREATED
+  PROFILE_UPDATED
+  SYSTEM
+}
 
-  student   Student?
-  company   Company?
+enum NotificationCategory {
+  APPLICATION
+  JOB
+  PROFILE
+  SYSTEM
+}
+
+model User {
+  id                    String         @id @default(uuid())
+  email                 String         @unique
+  password              String
+  role                  Role
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  student               Student?
+  company               Company?
+  notifications         Notification[] @relation("NotificationRecipient")
+  notificationsAuthored Notification[] @relation("NotificationActor")
 }
 
 model Student {
@@ -44,8 +63,16 @@ model Student {
   name         String
   course       String
   skills       String[]
-  availability String
+  availability String[]
+  headline     String?
+  summary      String?
+  city         String?
+  state        String?
+  semester     String?
+  university   String?
+  cr           String?
   portfolio    String?
+  photoUrl     String?
   isVisible    Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -57,16 +84,22 @@ model Student {
 }
 
 model Company {
-  id        String   @id @default(uuid())
-  name      String
-  about     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  name               String
+  about              String?
+  logoUrl            String?
+  commercialPhone    String?
+  legalName          String?
+  tradeName          String?
+  cultureDescription String?
+  businessSector     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id])
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
 
-  jobs      Job[]
+  jobs               Job[]
 }
 
 model Job {
@@ -102,4 +135,26 @@ model Application {
   job       Job     @relation(fields: [jobId], references: [id])
 
   @@unique([studentId, jobId])
+}
+
+model Notification {
+  id          String               @id @default(uuid())
+  userId      String
+  user        User                 @relation("NotificationRecipient", fields: [userId], references: [id])
+  type        NotificationType
+  category    NotificationCategory
+  title       String
+  message     String
+  linkUrl     String?
+  isRead      Boolean              @default(false)
+  readAt      DateTime?
+  createdAt   DateTime             @default(now())
+  actorUserId String?
+  actorUser   User?                @relation("NotificationActor", fields: [actorUserId], references: [id])
+  entityType  String?
+  entityId    String?
+  metadata    Json?
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
 }

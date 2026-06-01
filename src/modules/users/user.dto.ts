@@ -4,9 +4,20 @@ export interface CreateUserDTO {
   email: string;
   password: string;
   role: Role;
+  firstName?: string;
+  lastName?: string;
 }
 
 export interface LoginDTO {
   email: string;
   password: string;
+}
+
+export interface UpdateUserDTO {
+  email?: string;
+}
+
+export interface UpdatePasswordDTO {
+  currentPassword: string;
+  newPassword: string;
 }
