@@ -35,3 +35,19 @@ jobs:
 
       - name: Executar os testes
         run: npx vitest run --dir src/tests
+
+  migrations:
+    name: Validar migrations e fluxos com PostgreSQL descartável
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v6
+      - name: Configurar o Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - name: Instalar dependências
+        run: npm ci
+      - name: Validar banco vazio e atualização com dados sintéticos
+        run: npm run test:migrations

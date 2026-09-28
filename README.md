@@ -370,3 +370,10 @@ Altere `PORT` no `.env` do backend e atualize `VITE_API_URL` no frontend. Para o
 ## Licença
 
 Este projeto está configurado com a licença ISC no `package.json`.
+
+### Validação das migrations
+
+Execute `npm run test:migrations` com Docker ativo para validar o banco vazio e a
+atualização de dados sintéticos, incluindo os fluxos HTTP de perfis, candidaturas e
+notificações. O teste cria e remove seu próprio PostgreSQL descartável.
+Veja [a estratégia de conversão, execução e rollback](docs/CVAG-001-migrations.md).
