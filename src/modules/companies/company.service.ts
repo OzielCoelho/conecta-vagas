@@ -1,63 +1,53 @@
 import { AppError } from "../../shared/errors/app.error";
 import { NotificationService } from "../notifications/notification.service";
 import { CompanyRepository } from "./company.repository";
-import { CreateCompanyDTO, UpdateCompanyDTO } from "./company.dto";
+import { CreateCompanyDTO, UpdateCompanyDTO, CreateCompanyRecord, UpdateCompanyRecord } from "./company.dto";
 
 const companyRepository = new CompanyRepository();
 const notificationService = new NotificationService();
 
-function normalizeOptionalText(value?: string | null) {
-  if (value === undefined || value === null) {
-    return undefined;
+function normalizeName(value: string, label: string) {
+  if (typeof value !== "string" || value.trim().length < 2 || value.trim().length > 160) {
+    throw new AppError(`${label} deve ter entre 2 e 160 caracteres.`, 400);
   }
-
   return value.trim();
 }
 
-function resolveDisplayName(data: {
-  tradeName?: string;
-  legalName?: string;
-  name?: string;
-}, fallbackName?: string) {
-  return normalizeOptionalText(data.tradeName)
-    ?? normalizeOptionalText(data.legalName)
-    ?? normalizeOptionalText(data.name)
-    ?? fallbackName
-    ?? "Empresa";
-}
-
-function buildCompanyPayload(
-  data: Partial<CreateCompanyDTO & UpdateCompanyDTO>,
-  fallbackName?: string
-) {
-  const tradeName = normalizeOptionalText(data.tradeName);
-  const legalName = normalizeOptionalText(data.legalName);
-  const cultureDescription = normalizeOptionalText(data.cultureDescription);
-
-  return {
-    name: resolveDisplayName({ tradeName, legalName, name: data.name }, fallbackName),
-    about: cultureDescription,
-    logoUrl: normalizeOptionalText(data.logoUrl),
-    commercialPhone: normalizeOptionalText(data.commercialPhone),
-    legalName,
-    tradeName,
-    cultureDescription,
-    businessSector: normalizeOptionalText(data.businessSector),
-  };
+function normalizeCompanyFields(data: UpdateCompanyDTO): UpdateCompanyRecord {
+  const result: UpdateCompanyRecord = {};
+  if (data.name !== undefined) result.name = normalizeName(data.name, "Nome");
+  if (data.legalName !== undefined) result.legalName = normalizeName(data.legalName, "Razão social");
+  if (data.tradeName !== undefined) result.tradeName = normalizeName(data.tradeName, "Nome fantasia");
+  if (data.logoUrl !== undefined) result.logoUrl = data.logoUrl.trim();
+  if (data.commercialPhone !== undefined) result.commercialPhone = data.commercialPhone.trim();
+  if (data.businessSector !== undefined) result.businessSector = data.businessSector.trim();
+  // Both names are supported by the API; cultureDescription takes precedence.
+  const description = data.cultureDescription ?? data.about;
+  if (description !== undefined) {
+    result.cultureDescription = description.trim();
+    result.about = description.trim();
+  }
+  return result;
 }
 
 export class CompanyService {
   async create(data: CreateCompanyDTO, actorUserId?: string) {
+    const legalName = normalizeName(data.legalName, "Razão social");
+    const tradeName = normalizeName(data.tradeName, "Nome fantasia");
+    const payload: CreateCompanyRecord = {
+      ...normalizeCompanyFields(data),
+      userId: data.userId,
+      legalName,
+      tradeName,
+      name: tradeName,
+    };
     const companyExists = await companyRepository.findByUserId(data.userId);
 
     if (companyExists) {
       throw new AppError("Perfil de empresa já cadastrado.", 409);
     }
 
-    const company = await companyRepository.create({
-      ...buildCompanyPayload(data),
-      userId: data.userId,
-    });
+    const company = await companyRepository.create(payload);
 
     await notificationService.notifyCompanyProfileCreated({
       actorUserId,
@@ -86,7 +76,12 @@ export class CompanyService {
       throw new AppError("Empresa não encontrada.", 404);
     }
 
-    const updatedCompany = await companyRepository.update(id, buildCompanyPayload(data, company.name));
+    const payload = normalizeCompanyFields(data);
+    if (payload.tradeName !== undefined || payload.legalName !== undefined || payload.name !== undefined) {
+      payload.name = payload.tradeName ?? company.tradeName
+        ?? payload.legalName ?? company.legalName ?? payload.name ?? company.name;
+    }
+    const updatedCompany = await companyRepository.update(id, payload);
 
     await notificationService.notifyCompanyProfileUpdated({
       actorUserId,
