@@ -1,8 +1,8 @@
 import { prisma } from "../../shared/prisma/prisma.client";
-import { CreateCompanyDTO, UpdateCompanyDTO } from "./company.dto";
+import { CreateCompanyRecord, UpdateCompanyRecord } from "./company.dto";
 
 export class CompanyRepository {
-  async create(data: CreateCompanyDTO) {
+  async create(data: CreateCompanyRecord) {
     return prisma.company.create({
       data,
     });
@@ -20,7 +20,7 @@ export class CompanyRepository {
     });
   }
 
-  async update(id: string, data: UpdateCompanyDTO) {
+  async update(id: string, data: UpdateCompanyRecord) {
     return prisma.company.update({
       where: { id },
       data,
