@@ -1,4 +1,5 @@
 import { prisma } from "../../shared/prisma/prisma.client";
+import { publicCompanyProfileSelect } from "../companies/company.repository";
 import { CreateJobDTO, UpdateJobDTO } from "./job.dto";
 
 export class JobRepository {
@@ -11,21 +12,28 @@ export class JobRepository {
   async findById(id: string) {
     return prisma.job.findUnique({
       where: { id },
-      include: { company: true },
+      include: { company: { select: publicCompanyProfileSelect } },
+    });
+  }
+
+  async findByIdForNotification(id: string) {
+    return prisma.job.findUnique({
+      where: { id },
+      include: { company: { select: { ...publicCompanyProfileSelect, userId: true } } },
     });
   }
 
   async findAll() {
     return prisma.job.findMany({
       where: { isActive: true },
-      include: { company: true },
+      include: { company: { select: publicCompanyProfileSelect } },
     });
   }
 
   async findByCompanyId(companyId: string) {
     return prisma.job.findMany({
       where: { companyId },
-      include: { company: true },
+      include: { company: { select: publicCompanyProfileSelect } },
     });
   }
 

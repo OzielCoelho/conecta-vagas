@@ -42,7 +42,7 @@ export class JobService {
   }
 
   async update(id: string, data: UpdateJobDTO, actorUserId?: string, actorRole?: Role) {
-    const job = await jobRepository.findById(id);
+    const job = await jobRepository.findByIdForNotification(id);
 
     if (!job) {
       throw new AppError("Vaga não encontrada.", 404);

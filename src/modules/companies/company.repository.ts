@@ -1,6 +1,12 @@
 import { prisma } from "../../shared/prisma/prisma.client";
 import { CreateCompanyRecord, UpdateCompanyRecord } from "./company.dto";
 
+export const publicCompanyProfileSelect = {
+  id: true,
+  name: true,
+  about: true,
+} as const;
+
 export class CompanyRepository {
   async create(data: CreateCompanyRecord) {
     return prisma.company.create({

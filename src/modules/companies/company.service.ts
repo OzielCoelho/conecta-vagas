@@ -1,4 +1,5 @@
 import { AppError } from "../../shared/errors/app.error";
+import { Role } from "../../generated/prisma";
 import { NotificationService } from "../notifications/notification.service";
 import { CompanyRepository } from "./company.repository";
 import { CreateCompanyDTO, UpdateCompanyDTO, CreateCompanyRecord, UpdateCompanyRecord } from "./company.dto";
@@ -69,11 +70,15 @@ export class CompanyService {
     return company;
   }
 
-  async update(id: string, data: UpdateCompanyDTO, actorUserId?: string) {
+  async update(id: string, data: UpdateCompanyDTO, actorUserId: string, actorRole: Role) {
     const company = await companyRepository.findById(id);
 
     if (!company) {
       throw new AppError("Empresa não encontrada.", 404);
+    }
+
+    if (company.userId !== actorUserId && actorRole !== Role.COORDINATOR) {
+      throw new AppError("Acesso negado.", 403);
     }
 
     const payload = normalizeCompanyFields(data);

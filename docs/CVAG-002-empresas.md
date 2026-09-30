@@ -53,7 +53,8 @@ HTTP; não houve verificação manual da interface no navegador.
 
 A execução dos testes fonte usa o mesmo recorte da CI. O problema preexistente de
 npm test incluir testes compilados em dist permanece no escopo do CVAG-007.
-A autorização por propriedade do perfil continua sendo tratada no CVAG-003.
+A autorização por propriedade do perfil foi implementada no CVAG-003; a revisão e a
+integração desse trabalho continuam pendentes.
 
 ## Branch e revisão
 
