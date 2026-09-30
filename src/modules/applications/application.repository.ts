@@ -1,4 +1,5 @@
 import { prisma } from "../../shared/prisma/prisma.client";
+import { publicStudentProfileSelect } from "../students/student.repository";
 import { CreateApplicationDTO, UpdateApplicationStatusDTO } from "./application.dto";
 
 export class ApplicationRepository {
@@ -19,7 +20,7 @@ export class ApplicationRepository {
   async findByJobId(jobId: string) {
     return prisma.application.findMany({
       where: { jobId },
-      include: { student: true },
+      include: { student: { select: publicStudentProfileSelect } },
       orderBy: { score: "desc" },
     });
   }

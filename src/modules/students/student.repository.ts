@@ -1,6 +1,22 @@
 import { prisma } from "../../shared/prisma/prisma.client";
 import { CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
 
+export const publicStudentProfileSelect = {
+  id: true,
+  name: true,
+  course: true,
+  skills: true,
+  availability: true,
+  headline: true,
+  summary: true,
+  city: true,
+  state: true,
+  semester: true,
+  university: true,
+  portfolio: true,
+  photoUrl: true,
+} as const;
+
 export class StudentRepository {
   async create(data: CreateStudentDTO) {
     return prisma.student.create({
@@ -23,6 +39,7 @@ export class StudentRepository {
   async findAll() {
     return prisma.student.findMany({
       where: { isVisible: true },
+      select: publicStudentProfileSelect,
       orderBy: { updatedAt: "desc" },
     });
   }

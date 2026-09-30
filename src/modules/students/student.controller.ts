@@ -32,7 +32,7 @@ export class StudentController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateStudentDTO;
 
-    const student = await studentService.update(id, data, request.user.id);
+    const student = await studentService.update(id, data, request.user.id, request.user.role);
 
     return reply.send(student);
   }

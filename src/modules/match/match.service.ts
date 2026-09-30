@@ -1,4 +1,5 @@
 import { prisma } from "../../shared/prisma/prisma.client";
+import { publicStudentProfileSelect } from "../students/student.repository";
 
 export class MatchService {
   calculateScore(
@@ -94,7 +95,7 @@ export class MatchService {
   async getRankedApplications(jobId: string) {
     return prisma.application.findMany({
       where: { jobId },
-      include: { student: true },
+      include: { student: { select: publicStudentProfileSelect } },
       orderBy: { score: "desc" },
     });
   }

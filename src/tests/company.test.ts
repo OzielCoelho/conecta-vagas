@@ -43,8 +43,8 @@ beforeEach(async () => {
   token = app.jwt.sign({ id: current.userId, role: "COMPANY" });
 });
 afterEach(async () => { await app.close(); });
-function request(method: "POST" | "PUT", payload: object) {
-  return app.inject({ method, url: method === "POST" ? "/companies" : `/companies/${current.id}`, headers: { authorization: `Bearer ${token}` }, payload });
+function request(method: "POST" | "PUT", payload: object, requestToken = token) {
+  return app.inject({ method, url: method === "POST" ? "/companies" : `/companies/${current.id}`, headers: { authorization: `Bearer ${requestToken}` }, payload });
 }
 
 describe("Company API - validation and persistence contract", () => {
@@ -90,6 +90,37 @@ describe("Company API - validation and persistence contract", () => {
   it("supports a partial update without rewriting names or descriptions", async () => {
     expect((await request("PUT", { commercialPhone: "  92999999999  " })).statusCode).toBe(200);
     expect(mocks.update).toHaveBeenCalledWith(current.id, { commercialPhone: "92999999999" });
+  });
+  it("allows only the company owner or a coordinator to update the profile", async () => {
+    const ownerResponse = await request("PUT", { commercialPhone: "999" });
+    expect(ownerResponse.statusCode).toBe(200);
+    expect(mocks.updated).toHaveBeenCalledOnce();
+
+    vi.clearAllMocks();
+    mocks.findById.mockResolvedValue(current);
+    const otherCompanyToken = app.jwt.sign({ id: "user-2", role: "COMPANY" });
+    const forbiddenResponse = await request("PUT", { commercialPhone: "000", userId: "user-1", role: "COORDINATOR" }, otherCompanyToken);
+    expect(forbiddenResponse.statusCode).toBe(403);
+    expect(forbiddenResponse.json()).toEqual({ message: "Acesso negado." });
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.updated).not.toHaveBeenCalled();
+
+    const coordinatorToken = app.jwt.sign({ id: "coordinator-1", role: "COORDINATOR" });
+    expect((await request("PUT", { commercialPhone: "111" }, coordinatorToken)).statusCode).toBe(200);
+    expect(mocks.update).toHaveBeenCalledOnce();
+  });
+  it("requires a valid token to update a company profile", async () => {
+    const response = await app.inject({ method: "PUT", url: `/companies/${current.id}`, payload: { commercialPhone: "000" } });
+    expect(response.statusCode).toBe(401);
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.updated).not.toHaveBeenCalled();
+  });
+  it("rejects invalid tokens and identity fields supplied in the body", async () => {
+    const invalidTokenResponse = await request("PUT", { commercialPhone: "000" }, `${token}invalid`);
+    expect(invalidTokenResponse.statusCode).toBe(401);
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.updated).not.toHaveBeenCalled();
+
   });
   it("supports legacy records without legalName or tradeName", async () => {
     mocks.findById.mockResolvedValue({ ...current, legalName: null, tradeName: null });

@@ -1,4 +1,5 @@
 import { AppError } from "../../shared/errors/app.error";
+import { Role } from "../../generated/prisma";
 import { NotificationService } from "../notifications/notification.service";
 import { CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
 import { StudentRepository } from "./student.repository";
@@ -39,11 +40,15 @@ export class StudentService {
     return studentRepository.findAll();
   }
 
-  async update(id: string, data: UpdateStudentDTO, actorUserId?: string) {
+  async update(id: string, data: UpdateStudentDTO, actorUserId: string, actorRole: Role) {
     const student = await studentRepository.findById(id);
 
     if (!student) {
       throw new AppError("Aluno não encontrado.", 404);
+    }
+
+    if (student.userId !== actorUserId && actorRole !== Role.COORDINATOR) {
+      throw new AppError("Acesso negado.", 403);
     }
 
     const updatedStudent = await studentRepository.update(id, data);

@@ -36,7 +36,7 @@ export class ApplicationService {
 
     const [student, job] = await Promise.all([
       studentRepository.findById(data.studentId),
-      jobRepository.findById(data.jobId),
+      jobRepository.findByIdForNotification(data.jobId),
     ]);
 
     if (!student) {

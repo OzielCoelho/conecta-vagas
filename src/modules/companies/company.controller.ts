@@ -26,7 +26,7 @@ export class CompanyController {
     const { id } = request.params as { id: string };
     const data = request.body as UpdateCompanyDTO;
 
-    const company = await companyService.update(id, data, request.user.id);
+    const company = await companyService.update(id, data, request.user.id, request.user.role);
 
     return reply.send(company);
   }
