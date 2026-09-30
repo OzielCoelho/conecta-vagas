@@ -19,6 +19,7 @@ if (!jwtSecret) {
 const app = Fastify({
   logger: true,
   bodyLimit: 4 * 1024 * 1024,
+  ajv: { customOptions: { removeAdditional: false } },
 });
 
 app.register(fastifyCors, {
@@ -60,7 +61,7 @@ app.setErrorHandler((error, request, reply) => {
   }
 
   if (isValidationError(error) && error.validation.length > 0) {
-    return reply.status(400).send({ message: error.message });
+    return reply.status(400).send({ message: "Dados da requisição inválidos." });
   }
 
   if (isBodyTooLargeError(error)) {
