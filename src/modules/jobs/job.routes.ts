@@ -50,6 +50,7 @@ export async function jobRoutes(app: FastifyInstance) {
   app.post("/", { preHandler: authenticate(["COMPANY"]), schema: createJobSchema }, jobController.create.bind(jobController));
   app.get("/", { preHandler: authenticate(["STUDENT", "COORDINATOR", "COMPANY"]), schema: { querystring: emptyQuerySchema } }, jobController.getAll.bind(jobController));
   app.get("/mine", { preHandler: authenticate(["COMPANY"]), schema: { querystring: emptyQuerySchema } }, jobController.getMine.bind(jobController));
+  app.get("/recommended", { preHandler: authenticate(["STUDENT"]), schema: { querystring: emptyQuerySchema } }, jobController.getRecommended.bind(jobController));
   app.get("/:id", { preHandler: authenticate(["STUDENT", "COORDINATOR", "COMPANY"]), schema: jobIdSchema }, jobController.getById.bind(jobController));
   app.put("/:id", { preHandler: authenticate(["COMPANY", "COORDINATOR"]), schema: updateJobSchema }, jobController.update.bind(jobController));
 }
