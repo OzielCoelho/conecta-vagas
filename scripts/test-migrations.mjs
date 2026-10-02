@@ -42,7 +42,10 @@ async function apiSmoke(env) {
   async function account(role) {
     const body = { email: `${role.toLowerCase()}@example.test`, password: 'test_password', role, firstName: 'Aluno', lastName: 'Teste' };
     await request('/users/register', 'POST', body, undefined, 201);
-    return (await request('/users/login', 'POST', body)).token;
+    return (await request('/users/login', 'POST', {
+      email: body.email,
+      password: body.password,
+    })).token;
   }
   const student = await account('STUDENT');
   const company = await account('COMPANY');
