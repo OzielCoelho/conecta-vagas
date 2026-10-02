@@ -1,3 +1,5 @@
+import { notifySessionInvalidated } from "../auth/auth-session";
+
 export const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3333";
 
 export class ApiError extends Error {
@@ -51,6 +53,10 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       message = response.statusText || message;
     }
 
+    if (response.status === 401 && options.token
+        && !(path === "/users/password" && message === "Senha atual incorreta.")) {
+      notifySessionInvalidated(options.token);
+    }
     throw new ApiError(message, response.status);
   }
 

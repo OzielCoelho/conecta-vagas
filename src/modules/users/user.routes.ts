@@ -67,9 +67,9 @@ const updatePasswordSchema = {
 } as const;
 
 export async function userRoutes(app: FastifyInstance) {
-  app.post("/register", { schema: registerSchema }, userController.register.bind(userController));
-  app.post("/login", { schema: loginSchema }, userController.login.bind(userController));
+  app.post("/register", { config: { rateLimit: {} }, schema: registerSchema }, userController.register.bind(userController));
+  app.post("/login", { config: { rateLimit: {} }, schema: loginSchema }, userController.login.bind(userController));
   app.get("/me", { preHandler: authenticate() }, userController.getMe.bind(userController));
-  app.patch("/me", { preHandler: authenticate(), schema: updateMeSchema }, userController.updateMe.bind(userController));
-  app.patch("/password", { preHandler: authenticate(), schema: updatePasswordSchema }, userController.updatePassword.bind(userController));
+  app.patch("/me", { config: { rateLimit: {} }, preHandler: authenticate(), schema: updateMeSchema }, userController.updateMe.bind(userController));
+  app.patch("/password", { config: { rateLimit: {} }, preHandler: authenticate(), schema: updatePasswordSchema }, userController.updatePassword.bind(userController));
 }
