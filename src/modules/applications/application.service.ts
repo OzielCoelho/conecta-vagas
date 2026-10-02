@@ -47,6 +47,10 @@ export class ApplicationService {
       throw new AppError("Vaga não encontrada.", 404);
     }
 
+    if (!job.isActive) {
+      throw new AppError("Esta vaga não está mais disponível para candidaturas.", 409);
+    }
+
     const application = await applicationRepository.create(data);
     const applicationWithScore = await matchService.calculateAndSaveScore(application.id);
 

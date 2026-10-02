@@ -75,6 +75,18 @@ async function apiSmoke(env) {
   const job = await request('/jobs', 'POST', { title: 'Estágio', description: 'Desenvolvimento', skills: ['TypeScript'], model: 'REMOTE', course: 'Computação', availability: 'MANHA' }, company, 201);
   const application = await request('/applications', 'POST', { jobId: job.id }, student, 201);
   assert.ok(application.id);
+  // Exercise real persistence for CVAG-005, including a job closed after listing.
+  const inactiveJob = await request('/jobs', 'POST', { title: 'Vaga encerrada', description: 'Teste', skills: ['TypeScript'], model: 'REMOTE' }, company, 201);
+  await request(`/jobs/${inactiveJob.id}`, 'PUT', { isActive: false }, company);
+  const dbName = new URL(env.DATABASE_URL).pathname.slice(1);
+  const counts = () => sql(dbName, 'SELECT (SELECT count(*) FROM "Application"), (SELECT count(*) FROM "Notification");').trim();
+  const beforeRejectedRequests = counts();
+  const inactiveError = await request('/applications', 'POST', { jobId: inactiveJob.id }, student, 409);
+  assert.equal(inactiveError.message, 'Esta vaga não está mais disponível para candidaturas.');
+  await request('/applications', 'POST', { jobId: '00000000-0000-4000-8000-000000000000' }, student, 404);
+  await request('/applications', 'POST', { jobId: job.id }, student, 409);
+  await request('/applications', 'POST', { jobId: job.id }, company, 403);
+  assert.equal(counts(), beforeRejectedRequests, 'Rejected requests must not persist applications or notifications');
   const applications = await request('/applications/me', 'GET', undefined, student);
   assert.ok(applications.some(item => item.id === application.id));
   await request('/notifications', 'GET', undefined, student);
@@ -111,6 +123,11 @@ try {
     prisma(env, 'migrate', 'diff', '--from-config-datasource', '--to-schema', 'prisma/schema.prisma', '--exit-code');
     prisma(env, 'generate');
     await apiSmoke(env);
+    const concurrencyUrl = new URL(env.DATABASE_URL);
+    concurrencyUrl.searchParams.set('application_name', 'cvag005_candidate');
+    process.stdout.write(run(process.execPath, ['--import', 'tsx', 'scripts/test-application-concurrency.ts'], {
+      env: { ...env, DATABASE_URL: concurrencyUrl.toString(), CVAG_DISPOSABLE_TEST: '1' },
+    }));
     assert.ok(Number(sql(db, 'SELECT count(*) FROM "Notification";').trim()) > 0);
     console.log(`PASS ${db}: deploy twice, schema parity, generate, profiles, applications and notifications`);
   }
