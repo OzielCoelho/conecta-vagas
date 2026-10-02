@@ -60,6 +60,10 @@ function getScoreLabel(score: number) {
   return "Baixa compatibilidade";
 }
 
+function isDemoJob(job: JobItem) {
+  return job.id.startsWith("demo-");
+}
+
 function mergeWithDemoJobs(realJobs: JobItem[]) {
   const demoJobs = getStoredDemoJobs() as JobItem[];
   if (realJobs.length >= 4) return realJobs;
@@ -206,6 +210,14 @@ export function JobsPage() {
   async function handleApply(jobId: string) {
     if (!token) {
       navigate("/?auth=login");
+      return;
+    }
+
+    if (jobId.startsWith("demo-")) {
+      setApplicationFeedbackByJobId((current) => ({
+        ...current,
+        [jobId]: { type: "error", message: "Esta é uma vaga demonstrativa e não aceita candidaturas." },
+      }));
       return;
     }
 
@@ -490,6 +502,7 @@ export function JobsPage() {
                     type="button"
                     disabled={
                       !item.job.isActive ||
+                      isDemoJob(item.job) ||
                       submittingJobId === item.job.id ||
                       Boolean(item.application) ||
                       !isAuthenticated ||
@@ -502,9 +515,11 @@ export function JobsPage() {
                   >
                     {item.application
                       ? "Candidatura enviada"
-                      : submittingJobId === item.job.id
-                        ? "Enviando..."
-                        : "Candidatar-se com 1 clique"}
+                      : isDemoJob(item.job)
+                        ? "Vaga demonstrativa"
+                        : submittingJobId === item.job.id
+                          ? "Enviando..."
+                          : "Candidatar-se com 1 clique"}
                   </button>
                 </div>
               </article>
@@ -595,6 +610,7 @@ export function JobsPage() {
                     type="button"
                     disabled={
                       !selectedJob.job.isActive ||
+                      isDemoJob(selectedJob.job) ||
                       submittingJobId === selectedJob.job.id ||
                       Boolean(selectedJob.application) ||
                       !isAuthenticated ||
@@ -604,9 +620,11 @@ export function JobsPage() {
                   >
                     {selectedJob.application
                       ? "Candidatura enviada"
-                      : submittingJobId === selectedJob.job.id
-                        ? "Enviando..."
-                        : "Candidatar-se com 1 clique"}
+                      : isDemoJob(selectedJob.job)
+                        ? "Vaga demonstrativa"
+                        : submittingJobId === selectedJob.job.id
+                          ? "Enviando..."
+                          : "Candidatar-se com 1 clique"}
                   </button>
                 </div>
               </div>
