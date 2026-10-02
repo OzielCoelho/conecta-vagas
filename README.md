@@ -377,3 +377,10 @@ Execute `npm run test:migrations` com Docker ativo para validar o banco vazio e 
 atualização de dados sintéticos, incluindo os fluxos HTTP de perfis, candidaturas e
 notificações. O teste cria e remove seu próprio PostgreSQL descartável.
 Veja [a estratégia de conversão, execução e rollback](docs/CVAG-001-migrations.md).
+
+### Integração contínua e publicação
+
+A CI verifica tipos, builds, testes e migrations em PostgreSQL descartável. A imagem
+Docker só é publicada na `main` do repositório principal depois de todas as
+validações passarem. Execuções manuais usam **Actions → Validações do projeto**.
+Veja [os jobs, comandos e o teste de falha controlada](docs/CVAG-007-integracao-continua.md).

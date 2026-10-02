@@ -1,44 +1,73 @@
-name: Testes do backend
+name: Validações do projeto
 
 on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      simulate_failure:
+        description: Forçar falha controlada para verificar o bloqueio da publicação
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   tests:
-    name: Executar testes
+    name: Backend — tipos, build e testes
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/conectavagas
       JWT_SECRET: ci_secret_apenas_para_testes
-
     steps:
       - name: Baixar o código
         uses: actions/checkout@v6
-
       - name: Configurar o Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-
+          cache-dependency-path: package-lock.json
       - name: Instalar dependências
         run: npm ci
-
       - name: Gerar o Prisma Client
         run: npx prisma generate
+      - name: Verificar tipos do backend
+        run: npm run typecheck
+      - name: Compilar backend
+        run: npm run build
+      - name: Executar testes após o build
+        run: npm test
+      - name: Simular falha controlada
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.simulate_failure }}
+        run: exit 1
 
-      - name: Executar os testes
-        run: npx vitest run --dir src/tests
+  frontend:
+    name: Frontend — tipos e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v6
+      - name: Configurar o Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Instalar dependências do frontend
+        run: npm ci --prefix apps/web
+      - name: Verificar tipos do frontend
+        run: npm run typecheck --prefix apps/web
+      - name: Compilar frontend
+        run: npm run build --prefix apps/web
 
   migrations:
     name: Validar migrations e fluxos com PostgreSQL descartável
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Baixar o código
         uses: actions/checkout@v6
@@ -47,7 +76,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: package-lock.json
       - name: Instalar dependências
         run: npm ci
       - name: Validar banco vazio e atualização com dados sintéticos
         run: npm run test:migrations
+
+  publish:
+    name: Publicar API após validações
+    needs: [tests, frontend, migrations]
+    if: >-
+      ${{ github.repository == 'Uninorte-Extensao/conecta-vagas'
+          && github.ref == 'refs/heads/main'
+          && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
+    uses: ./.github/workflows/docker-publish.yml
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

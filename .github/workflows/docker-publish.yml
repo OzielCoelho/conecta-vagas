@@ -1,10 +1,12 @@
 name: Publicar imagem da API
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 
 permissions:
   contents: read
@@ -12,7 +14,15 @@ permissions:
 jobs:
   publish:
     name: Construir e publicar imagem
+    if: >-
+      ${{ github.repository == 'Uninorte-Extensao/conecta-vagas'
+          && github.ref == 'refs/heads/main'
+          && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    concurrency:
+      group: docker-publish-main
+      cancel-in-progress: false
 
     steps:
       - name: Baixar o código
