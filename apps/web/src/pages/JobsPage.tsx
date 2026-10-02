@@ -489,6 +489,7 @@ export function JobsPage() {
                     className={item.application ? "primary-button primary-button--success" : "primary-button"}
                     type="button"
                     disabled={
+                      !item.job.isActive ||
                       submittingJobId === item.job.id ||
                       Boolean(item.application) ||
                       !isAuthenticated ||
@@ -593,6 +594,7 @@ export function JobsPage() {
                     className={selectedJob.application ? "primary-button primary-button--success" : "primary-button"}
                     type="button"
                     disabled={
+                      !selectedJob.job.isActive ||
                       submittingJobId === selectedJob.job.id ||
                       Boolean(selectedJob.application) ||
                       !isAuthenticated ||

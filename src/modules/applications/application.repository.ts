@@ -1,12 +1,29 @@
+import { Prisma } from "../../generated/prisma";
+import { AppError } from "../../shared/errors/app.error";
 import { prisma } from "../../shared/prisma/prisma.client";
 import { publicStudentProfileSelect } from "../students/student.repository";
 import { CreateApplicationDTO, UpdateApplicationStatusDTO } from "./application.dto";
 
 export class ApplicationRepository {
   async create(data: CreateApplicationDTO) {
-    return prisma.application.create({
-      data,
-    });
+    try {
+      return await prisma.$transaction(async (transaction) => {
+        // Serialize with updates of this job until the application is persisted.
+        const jobs = await transaction.$queryRaw<{ isActive: boolean }[]>`
+          SELECT "isActive" FROM "Job" WHERE "id" = ${data.jobId} FOR UPDATE
+        `;
+        if (!jobs[0]) throw new AppError("Vaga não encontrada.", 404);
+        if (!jobs[0].isActive) {
+          throw new AppError("Esta vaga não está mais disponível para candidaturas.", 409);
+        }
+        return transaction.application.create({ data });
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+        throw new AppError("Você já se candidatou a esta vaga.", 409);
+      }
+      throw error;
+    }
   }
 
   async findByStudentAndJob(studentId: string, jobId: string) {
