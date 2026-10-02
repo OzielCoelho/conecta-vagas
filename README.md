@@ -384,3 +384,9 @@ A CI verifica tipos, builds, testes e migrations em PostgreSQL descartável. A i
 Docker só é publicada na `main` do repositório principal depois de todas as
 validações passarem. Execuções manuais usam **Actions → Validações do projeto**.
 Veja [os jobs, comandos e o teste de falha controlada](docs/CVAG-007-integracao-continua.md).
+
+### Segurança e sessões
+
+JWTs expiram em 1 hora por padrão; o frontend usa sessionStorage e solicita novo
+login após expiração. Configure CORS_ORIGINS para autorizar o frontend e consulte
+[as variáveis, limites e comportamento da sessão](docs/CVAG-006-seguranca-api.md).
