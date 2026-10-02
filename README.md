@@ -36,7 +36,7 @@ Plataforma full stack para aproximar estudantes e empresas por meio da publicaç
 ## Estrutura do projeto
 
 ```text
-conecta_vagas/
+conecta-vagas/
 ├── apps/
 │   └── web/                 # Aplicação React
 │       └── src/
@@ -58,6 +58,44 @@ conecta_vagas/
 └── prisma.config.ts
 ```
 
+O backend e o frontend são aplicações separadas no mesmo repositório. O backend
+expõe a API Fastify na porta `3333`; o frontend Vite usa `VITE_API_URL` para
+consumir essa API na porta `5173`.
+
+## Arquitetura
+
+O diagrama editável e a versão visual da arquitetura estão em:
+
+- [Diagrama editável](docs/arquitetura-conecta-vagas.drawio)
+- [Diagrama visual em SVG](docs/arquitetura-conecta-vagas.svg)
+
+### Componentes atuais
+
+- **Frontend:** React, React Router e Vite em `apps/web`.
+- **API:** Fastify com TypeScript em `src`, organizada por módulos de usuários,
+  estudantes, empresas, vagas, candidaturas, notificações e matching.
+- **Autenticação e segurança:** JWT, bcryptjs, CORS configurável, rate limit e
+  validação de requisições.
+- **Persistência:** Prisma ORM conectado ao PostgreSQL, com migrations em
+  `prisma/migrations`.
+- **Execução e entrega:** Docker para o banco local e workflow do GitHub Actions
+  para tipos, builds, testes, migrations e publicação condicionada da API.
+
+### Integrações planejadas
+
+Storage de objetos para imagens e integração com Groq/LLM são possibilidades
+futuras. Elas não fazem parte do fluxo atual e não são necessárias para o
+cálculo determinístico de compatibilidade.
+
+### Fluxo principal
+
+```text
+Usuário → React/Vite → API Fastify → Prisma → PostgreSQL
+                              ├── autenticação e autorização
+                              ├── vagas, candidaturas e notificações
+                              └── matching determinístico
+```
+
 ## Pré-requisitos
 
 - Node.js 20 ou superior
@@ -70,8 +108,8 @@ conecta_vagas/
 ### 1. Obtenha o projeto
 
 ```bash
-git clone https://github.com/silv0007/conecta_vagas.git
-cd conecta_vagas
+git clone https://github.com/Uninorte-Extensao/conecta-vagas.git
+cd conecta-vagas
 ```
 
 ### 2. Instale as dependências do backend
@@ -95,7 +133,8 @@ Com Docker, crie um banco dedicado ao projeto:
 ```bash
 docker run -d \
   --name conecta-vagas-postgres \
-  -e POSTGRES_PASSWORD=12345 \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=conectavagas \
   -p 5432:5432 \
   postgres:17-alpine
@@ -114,7 +153,7 @@ Se preferir uma instalação local do PostgreSQL, crie o banco `conectavagas` e 
 Crie `.env` na raiz, usando `.env.example` como referência:
 
 ```env
-DATABASE_URL="postgresql://postgres:12345@localhost:5432/conectavagas"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/conectavagas"
 JWT_SECRET="troque_por_uma_chave_longa_e_aleatoria"
 PORT=3333
 ```
@@ -126,6 +165,10 @@ Variáveis:
 | `DATABASE_URL` | Sim | URL de conexão com o PostgreSQL |
 | `JWT_SECRET` | Sim | Chave usada para assinar tokens JWT |
 | `PORT` | Não | Porta da API; o padrão é `3333` |
+| `JWT_TTL_SECONDS` | Não | Tempo de validade do JWT; o padrão é `3600` segundos |
+| `CORS_ORIGINS` | Não | Origens permitidas, separadas por vírgula |
+| `AUTH_RATE_LIMIT_MAX` | Não | Número máximo de tentativas por janela |
+| `AUTH_RATE_LIMIT_WINDOW_MS` | Não | Duração da janela do rate limit em milissegundos |
 
 Não publique o `.env` ou credenciais reais no repositório.
 
@@ -198,6 +241,28 @@ npm run build
 ```
 
 O build do frontend é gerado em `apps/web/dist`.
+
+### Validação completa usada pela CI
+
+Com PostgreSQL disponível, os comandos equivalentes aos jobs da CI são:
+
+```bash
+npm ci
+npx prisma generate
+npm run typecheck
+npm run build
+npm test
+npm run test:migrations
+npm ci --prefix apps/web
+npm run typecheck --prefix apps/web
+npm run build --prefix apps/web
+```
+
+O workflow `.github/workflows/ci.yml` executa esses grupos em jobs separados.
+O workflow `.github/workflows/docker-publish.yml` só publica a imagem quando as
+validações passam, o evento ocorre na `main` do repositório oficial e os secrets
+do Docker Hub estão configurados no GitHub. Os valores dos secrets não ficam no
+repositório.
 
 ## Scripts disponíveis
 
@@ -390,3 +455,11 @@ Veja [os jobs, comandos e o teste de falha controlada](docs/CVAG-007-integracao-
 JWTs expiram em 1 hora por padrão; o frontend usa sessionStorage e solicita novo
 login após expiração. Configure CORS_ORIGINS para autorizar o frontend e consulte
 [as variáveis, limites e comportamento da sessão](docs/CVAG-006-seguranca-api.md).
+
+### Documentação relacionada
+
+- [Contribuição e fluxo de branches](CONTRIBUTING.md)
+- [Como executar o projeto](COMO_RODAR.md)
+- [Histórico das migrations](docs/CVAG-001-migrations.md)
+- [Integração contínua](docs/CVAG-007-integracao-continua.md)
+- [Recomendações por compatibilidade](docs/CVAG-008-recomendacoes.md)

@@ -672,6 +672,41 @@ Se não tiver certeza de qual código deve permanecer, não escolha arbitrariame
 
 ---
 
+# 20.1. Atualizando a documentação e o diagrama
+
+Alterações de arquitetura, rotas, variáveis de ambiente, comandos ou workflows
+devem atualizar o `README.md` e, quando afetarem o desenho do sistema, os dois
+artefatos em `docs/`:
+
+- `docs/arquitetura-conecta-vagas.drawio`: fonte editável para abrir no
+  [diagrams.net](https://app.diagrams.net/).
+- `docs/arquitetura-conecta-vagas.svg`: exportação visual versionada junto da
+  fonte.
+
+O diagrama deve mostrar somente componentes existentes como parte da arquitetura
+atual. Integrações ainda não implementadas, como Storage de objetos e Groq/LLM,
+devem permanecer em uma área separada de componentes planejados.
+
+Ao alterar o diagrama:
+
+1. Abra o arquivo `.drawio` no diagrams.net.
+2. Atualize os fluxos e os rótulos afetados pela mudança.
+3. Exporte novamente a versão SVG.
+4. Confira se nenhum token, senha, arquivo `.env` ou valor secreto entrou nos
+   arquivos.
+5. Inclua no Pull Request o motivo da alteração e uma imagem ou link para a
+   versão visual.
+
+## 20.2. Checklist específico para documentação
+
+- [ ] README com comandos testados e links funcionais.
+- [ ] CONTRIBUTING com o fluxo de contribuição atual.
+- [ ] Variáveis de ambiente documentadas sem valores secretos.
+- [ ] Diagrama `.drawio` editável e `.svg` atualizado.
+- [ ] Componentes atuais separados das integrações futuras.
+- [ ] CI/CD e Docker representados de acordo com os workflows existentes.
+- [ ] Issues e cards relacionados citados no Pull Request.
+
 # 21. Depois que o Pull Request for aprovado e mergeado
 
 Volte para a `main`:
