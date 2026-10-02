@@ -17,6 +17,12 @@ export const publicStudentProfileSelect = {
   photoUrl: true,
 } as const;
 
+export const matchingStudentProfileSelect = {
+  course: true,
+  skills: true,
+  availability: true,
+} as const;
+
 export class StudentRepository {
   async create(data: CreateStudentDTO) {
     return prisma.student.create({
@@ -27,6 +33,13 @@ export class StudentRepository {
   async findByUserId(userId: string) {
     return prisma.student.findUnique({
       where: { userId },
+    });
+  }
+
+  async findMatchingProfileByUserId(userId: string) {
+    return prisma.student.findUnique({
+      where: { userId },
+      select: matchingStudentProfileSelect,
     });
   }
 

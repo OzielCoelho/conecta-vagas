@@ -30,6 +30,25 @@ export class JobRepository {
     });
   }
 
+  async findActiveForMatching() {
+    return prisma.job.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        skills: true,
+        model: true,
+        location: true,
+        course: true,
+        availability: true,
+        isActive: true,
+        createdAt: true,
+        company: { select: publicCompanyProfileSelect },
+      },
+    });
+  }
+
   async findByCompanyId(companyId: string) {
     return prisma.job.findMany({
       where: { companyId },
