@@ -39,7 +39,7 @@ function extractSkills(text: string) {
     .slice(0, 30);
 }
 
-function extractDraft(text: string): ResumeProfileDraft {
+export function extractResumeDraftFromText(text: string): ResumeProfileDraft {
   const lines = text.split(String.fromCharCode(10)).map(cleanLine).filter(Boolean);
   const email = text.match(new RegExp("[A-Z0-9._%+-]+@[A-Z0-9.-]+[.][A-Z]{2,}", "i"))?.[0];
   const phone = text.match(new RegExp("(?:[+]55[ ]?)?(?:[(]?[0-9]{2}[)]?[ ]?)?(?:9[ ]?)?[0-9]{4,5}[-. ]?[0-9]{4}"))?.[0];
@@ -78,7 +78,35 @@ export async function extractResumeDraft(buffer: Buffer): Promise<ResumeProfileD
       throw new AppError("Nao foi possivel extrair texto suficiente do curriculo.", 422);
     }
 
-    return extractDraft(text);
+    return extractResumeDraftFromText(text);
+  } catch (error) {
+    if (error instanceof AppError) throw error;
+    throw new AppError("Nao foi possivel processar o curriculo em PDF.", 422);
+  } finally {
+    await parser.destroy();
+  }
+}
+
+export async function extractResumeText(buffer: Buffer): Promise<string> {
+  if (!buffer.subarray(0, 5).toString("ascii").startsWith("%PDF-")) {
+    throw new AppError("O arquivo enviado nao e um PDF valido.", 415);
+  }
+
+  const parser = new PDFParse({ data: buffer });
+  try {
+    const result = await parser.getText();
+    const newline = String.fromCharCode(10);
+    const carriageReturn = String.fromCharCode(13);
+    const text = result.text
+      .split(carriageReturn).join(newline)
+      .replace(new RegExp(newline + "{3,}", "g"), newline + newline)
+      .trim();
+
+    if (text.length < 20) {
+      throw new AppError("Nao foi possivel extrair texto suficiente do curriculo.", 422);
+    }
+
+    return text;
   } catch (error) {
     if (error instanceof AppError) throw error;
     throw new AppError("Nao foi possivel processar o curriculo em PDF.", 422);
