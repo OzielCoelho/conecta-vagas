@@ -49,6 +49,7 @@ const updateStudentSchema = {
 export async function studentRoutes(app: FastifyInstance) {
   app.post("/", { preHandler: authenticate(["STUDENT"]), schema: createStudentSchema }, studentController.create.bind(studentController));
   app.get("/me", { preHandler: authenticate(["STUDENT"]) }, studentController.getMyProfile.bind(studentController));
+  app.post("/resume/import", { preHandler: authenticate(["STUDENT"]) }, studentController.importResume.bind(studentController));
   app.get("/", { preHandler: authenticate(["COORDINATOR", "COMPANY"]) }, studentController.getAll.bind(studentController));
   app.put("/:id", { preHandler: authenticate(["STUDENT", "COORDINATOR"]), schema: updateStudentSchema }, studentController.update.bind(studentController));
 }
