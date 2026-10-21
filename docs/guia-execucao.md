@@ -50,6 +50,10 @@ JWT_TTL_SECONDS=3600
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 AUTH_RATE_LIMIT_MAX=10
 AUTH_RATE_LIMIT_WINDOW_MS=60000
+GROQ_API_KEY=
+GROQ_MODEL=openai/gpt-oss-20b
+GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
+GROQ_TIMEOUT_MS=12000
 ~~~
 
 Crie apps/web/.env usando apps/web/.env.example:
@@ -59,6 +63,25 @@ VITE_API_URL=http://localhost:3333
 ~~~
 
 Nao publique arquivos .env, tokens ou senhas.
+
+## Seed demonstrativo
+
+Depois de aplicar as migrations, crie os dados para a demonstracao:
+
+~~~
+npm run db:seed:demo
+~~~
+
+O seed e idempotente e cria ou atualiza um estudante, uma empresa, um coordenador e cinco vagas ficticias marcadas como demonstracao em Manaus. Por padrao, as contas usam:
+
+~~~
+Aluno: demo.aluno@conecta-vagas.local
+Empresa: demo.empresa@conecta-vagas.local
+Coordenador: demo.coordenador@conecta-vagas.local
+Senha: ConectaDemo@2026
+~~~
+
+Em ambientes compartilhados, defina `DEMO_PASSWORD` e os enderecos `DEMO_*` antes de executar o seed.
 
 ## Execucao
 
@@ -101,3 +124,12 @@ npm run build
 - Tabela ausente: execute npx prisma migrate deploy.
 - Frontend sem API: confira VITE_API_URL e a porta 3333.
 - Node incompativel: use Node.js 20.19+ para o Vite atual.
+
+## API em container
+
+A imagem definida em `Dockerfile.api` compila a API em modo de producao. Ao iniciar, ela executa `prisma migrate deploy` e depois inicia o servidor na porta definida por `PORT`.
+
+~~~
+docker build -f Dockerfile.api -t conecta-vagas-api .
+docker run --env-file .env -p 3333:3333 conecta-vagas-api
+~~~
