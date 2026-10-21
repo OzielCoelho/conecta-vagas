@@ -1,6 +1,7 @@
 import "dotenv/config";
 import Fastify, { FastifyServerOptions } from "fastify";
 import fastifyCors from "@fastify/cors";
+import fastifyMultipart from "@fastify/multipart";
 import fastifyJwt from "@fastify/jwt";
 import { userRoutes } from "./modules/users/user.routes";
 import { studentRoutes } from "./modules/students/student.routes";
@@ -22,8 +23,12 @@ export function buildApp(options: { env?: NodeJS.ProcessEnv; logger?: FastifySer
         req(request) { return { method: request.method, url: request.url?.split("?")[0], remoteAddress: request.ip }; },
       },
     },
-    bodyLimit: 4 * 1024 * 1024,
+    bodyLimit: 6 * 1024 * 1024,
     ajv: { customOptions: { removeAdditional: false } },
+  });
+
+  app.register(fastifyMultipart, {
+    limits: { files: 1, fileSize: 5 * 1024 * 1024 },
   });
 
   app.register(fastifyCors, {
@@ -73,6 +78,16 @@ export function buildApp(options: { env?: NodeJS.ProcessEnv; logger?: FastifySer
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof AppError) {
       return reply.status(error.statusCode).send({ message: error.message });
+    }
+
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const code = (error as { code?: unknown }).code;
+      if (code === "FST_INVALID_MULTIPART_CONTENT_TYPE") {
+        return reply.status(400).send({ message: "Envie um arquivo PDF de curriculo." });
+      }
+      if (code === "FST_REQ_FILE_TOO_LARGE") {
+        return reply.status(413).send({ message: "O curriculo deve ter no maximo 5 MB." });
+      }
     }
 
     if (isValidationError(error) && error.validation.length > 0) {
