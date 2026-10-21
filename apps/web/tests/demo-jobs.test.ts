@@ -15,6 +15,6 @@ describe("vagas demonstrativas", () => {
     expect(jobs).toHaveLength(3);
     expect(jobs.every((job) => job.id.startsWith("demo-"))).toBe(true);
     expect(jobs.every((job) => job.isActive)).toBe(true);
-    expect(jobs.map((job) => job.title)).toContain("Estagio Front-end React");
+    expect(jobs.map((job) => job.title)).toContain("Estágio Front-end React");
   });
 });
