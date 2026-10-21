@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { ConfirmResumeDTO, CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
 import { StudentService } from "./student.service";
-import { extractResumeDraft, RESUME_MAX_FILE_SIZE } from "./resume-import.service";
+import { extractResumeDraftFromText, extractResumeText, RESUME_MAX_FILE_SIZE } from "./resume-import.service";
+import { enrichResumeDraftWithLlm } from "./resume-llm.service";
 import { generateResumePdf } from "./resume-pdf.service";
 import { AppError } from "../../shared/errors/app.error";
 
@@ -52,12 +53,15 @@ export class StudentController {
       throw new AppError("O curriculo deve ter no maximo 5 MB.", 413);
     }
 
-    const draft = await extractResumeDraft(buffer);
+    const text = await extractResumeText(buffer);
+    const localDraft = extractResumeDraftFromText(text);
+    const { draft, source } = await enrichResumeDraftWithLlm(text, localDraft);
 
     return reply.send({
       filename: upload.filename,
       profileDraft: draft,
       requiresConfirmation: true,
+      extractionSource: source,
     });
   }
 
