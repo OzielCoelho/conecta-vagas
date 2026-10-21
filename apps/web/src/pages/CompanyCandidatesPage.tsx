@@ -10,10 +10,6 @@ import {
 } from "../services/applications";
 import { formatAvailabilityList } from "../services/students";
 import { getMyCompanyJobs, type JobItem } from "../services/jobs";
-import mulherImage from "../imagens/mulher.png";
-import chrisImage from "../imagens/chris.webp";
-import soichiroImage from "../imagens/soichiro_01.jpg";
-import karinaImage from "../imagens/aespa-karina-prada-ambassador-280824.jpg";
 
 const candidateStageOrder: ApplicationStatus[] = [
   "SENT",
@@ -22,12 +18,7 @@ const candidateStageOrder: ApplicationStatus[] = [
   "APPROVED",
 ];
 
-const candidatePhotoByName: Record<string, string> = {
-  "gabriel takashi": soichiroImage,
-  "gabriel soares": chrisImage,
-  "ana clara souza": mulherImage,
-  "mariana oliveira": karinaImage,
-};
+const candidatePhotoByName: Record<string, string> = {};
 
 function getCandidatePhoto(application: CompanyApplication) {
   const normalizedName = application.student.name.trim().toLowerCase();

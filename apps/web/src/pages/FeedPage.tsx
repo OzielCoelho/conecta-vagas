@@ -10,21 +10,17 @@ import {
 } from "../services/applications";
 import { getAvailabilityLabel, getJobs, getJobModelLabel, type JobItem } from "../services/jobs";
 import { formatAvailabilityList, getStudents, type StudentProfile } from "../services/students";
-import networkingHeroImage from "../imagens/HD-wallpaper-social-networks-blue-digital-background-networking-concepts-blue-networking-background-technology-background.jpg";
-import networkingImage from "../imagens/importancia-do-networking-1024x683.png";
-import powerImage from "../imagens/The-power-of-networking-640x333.webp";
-import basesImage from "../imagens/bases.jpg";
-import socialImage from "../imagens/suporta-novas-empresas.webp";
-import heroStageImage from "../imagens/estagios.png";
-import javaImage from "../imagens/java.png";
-import pythonImage from "../imagens/poython.jpg";
-import cssImage from "../imagens/css.png";
-import slideImage from "../imagens/slide_32.png";
-import showcaseImage from "../imagens/Captura de tela 2026-05-18 205107.png";
-import mulherImage from "../imagens/mulher.png";
-import chrisImage from "../imagens/chris.webp";
-import soichiroImage from "../imagens/soichiro_01.jpg";
-import karinaImage from "../imagens/aespa-karina-prada-ambassador-280824.jpg";
+import networkingHeroImage from "../imagens/home-tela-07.webp";
+import networkingImage from "../imagens/home-tela-05.webp";
+import powerImage from "../imagens/home-tela-02.webp";
+import basesImage from "../imagens/home-tela-03.webp";
+import socialImage from "../imagens/home-tela-06.webp";
+import heroStageImage from "../imagens/home-tela-01.webp";
+import javaImage from "../imagens/home-tela-01.webp";
+import pythonImage from "../imagens/home-tela-02.webp";
+import cssImage from "../imagens/home-tela-03.webp";
+import slideImage from "../imagens/home-tela-04.webp";
+import showcaseImage from "../imagens/home-tela-06.webp";
 
 const feedImages = [
   heroStageImage,
@@ -66,7 +62,6 @@ function selectFeedImage(seed: string) {
   return feedImages[total % feedImages.length];
 }
 
-const companyFeedFallbackPhotos = [mulherImage, chrisImage, soichiroImage, karinaImage];
 const fakeCompanyFeedNames = new Set([
   "gabriel takashi",
   "gabriel soares",
@@ -92,8 +87,7 @@ function getCandidatePhoto(student: StudentProfile) {
     return student.photoUrl;
   }
 
-  const total = student.id.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return companyFeedFallbackPhotos[total % companyFeedFallbackPhotos.length];
+  return undefined;
 }
 
 function buildStudentPost(job: JobItem, application?: StudentApplication) {

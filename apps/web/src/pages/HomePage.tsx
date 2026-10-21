@@ -3,16 +3,16 @@ import { useAuth } from "../auth/AuthProvider";
 import { AuthModal } from "../components/auth/AuthModal";
 import { LoginForm } from "../components/auth/LoginForm";
 import { RegisterForm } from "../components/auth/RegisterForm";
-import carouselImage1 from "../imagens/Captura de tela 2026-05-18 201519.png";
-import carouselImage3 from "../imagens/Captura de tela 2026-05-18 203625.png";
-import carouselImage4 from "../imagens/Captura de tela 2026-05-18 204924.png";
-import carouselImage5 from "../imagens/Captura de tela 2026-05-18 205022.png";
-import carouselImage6 from "../imagens/Captura de tela 2026-05-18 205048.png";
-import showcaseImage1 from "../imagens/Captura de tela 2026-05-18 205107.png";
-import showcaseImage2 from "../imagens/Captura de tela 2026-05-18 205308.png";
-import networkingHeroImage from "../imagens/HD-wallpaper-social-networks-blue-digital-background-networking-concepts-blue-networking-background-technology-background.jpg";
-import supportImage from "../imagens/The-power-of-networking-640x333.webp";
-import slideImage from "../imagens/slide_32.png";
+import carouselImage1 from "../imagens/home-tela-01.webp";
+import carouselImage3 from "../imagens/home-tela-02.webp";
+import carouselImage4 from "../imagens/home-tela-03.webp";
+import carouselImage5 from "../imagens/home-tela-04.webp";
+import carouselImage6 from "../imagens/home-tela-05.webp";
+import showcaseImage1 from "../imagens/home-tela-06.webp";
+import showcaseImage2 from "../imagens/home-tela-07.webp";
+import networkingHeroImage from "../imagens/home-tela-07.webp";
+import supportImage from "../imagens/home-tela-02.webp";
+import slideImage from "../imagens/home-tela-04.webp";
 
 const audienceCards = [
   {

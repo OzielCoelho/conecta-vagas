@@ -18,13 +18,13 @@ import {
   type JobItem,
 } from "../services/jobs";
 import { getMyStudentProfile, type StudentProfile } from "../services/students";
-import heroStageImage from "../imagens/estagios.png";
-import powerImage from "../imagens/The-power-of-networking-640x333.webp";
-import basesImage from "../imagens/bases.jpg";
-import socialImage from "../imagens/6962d64ca6e66b24ac58011a_tipos-empresas-1200_og-2.jpeg";
-import networkingImage from "../imagens/importancia-do-networking-1024x683.png";
-import slideImage from "../imagens/slide_32.png";
-import showcaseImage from "../imagens/Captura de tela 2026-05-18 205107.png";
+import heroStageImage from "../imagens/home-tela-01.webp";
+import powerImage from "../imagens/home-tela-02.webp";
+import basesImage from "../imagens/home-tela-03.webp";
+import socialImage from "../imagens/home-tela-04.webp";
+import networkingImage from "../imagens/home-tela-05.webp";
+import slideImage from "../imagens/home-tela-04.webp";
+import showcaseImage from "../imagens/home-tela-06.webp";
 
 type MatchBand = "all" | "90" | "80" | "70";
 type ModelFilter = "all" | "REMOTE" | "HYBRID" | "IN_PERSON";
