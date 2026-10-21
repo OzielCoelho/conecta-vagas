@@ -31,3 +31,18 @@ export interface UpdateStudentDTO {
   photoUrl?: string;
   isVisible?: boolean;
 }
+
+export interface ConfirmResumeDTO {
+  name: string;
+  course: string;
+  skills: string[];
+  availability: string[];
+  headline?: string;
+  summary?: string;
+  city?: string;
+  state?: string;
+  semester?: string;
+  university?: string;
+  cr?: string;
+  portfolio?: string;
+}

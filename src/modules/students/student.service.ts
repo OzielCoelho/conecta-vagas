@@ -1,7 +1,7 @@
 import { AppError } from "../../shared/errors/app.error";
 import { Role } from "../../generated/prisma";
 import { NotificationService } from "../notifications/notification.service";
-import { CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
+import { ConfirmResumeDTO, CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
 import { StudentRepository } from "./student.repository";
 
 const studentRepository = new StudentRepository();
@@ -55,6 +55,24 @@ export class StudentService {
 
     await notificationService.notifyStudentProfileUpdated({
       actorUserId,
+      studentId: student.id,
+      studentUserId: student.userId,
+    });
+
+    return updatedStudent;
+  }
+
+  async confirmResume(userId: string, data: ConfirmResumeDTO) {
+    const student = await studentRepository.findByUserId(userId);
+
+    if (!student) {
+      throw new AppError("Aluno não encontrado.", 404);
+    }
+
+    const updatedStudent = await studentRepository.update(student.id, data);
+
+    await notificationService.notifyStudentProfileUpdated({
+      actorUserId: userId,
       studentId: student.id,
       studentUserId: student.userId,
     });

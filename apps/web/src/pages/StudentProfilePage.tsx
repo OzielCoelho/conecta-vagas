@@ -3,8 +3,13 @@ import { StudentProfileForm, type StudentProfileFormValues } from "../components
 import { useAuth } from "../auth/AuthProvider";
 import {
   formatAvailabilityList,
+  confirmStudentResume,
+  downloadStudentResume,
   getMyStudentProfile,
+  importStudentResume,
   updateStudentProfile,
+  type CreateStudentProfileInput,
+  type ResumeProfileDraft,
   type StudentProfile,
 } from "../services/students";
 import { readImageAsCompressedDataUrl } from "../utils/image";
@@ -50,6 +55,27 @@ function getProfileFormValues(profile: StudentProfile): StudentProfileFormValues
     cr: profile.cr ?? "",
     portfolio: profile.portfolio ?? "",
     photoUrl: profile.photoUrl ?? "",
+  };
+}
+
+function getResumeDraftFormValues(draft: ResumeProfileDraft): StudentProfileFormValues {
+  const { firstName, lastName } = splitName(draft.name ?? "");
+
+  return {
+    firstName,
+    lastName,
+    course: draft.course ?? "",
+    skills: draft.skills.join(", "),
+    availability: draft.availability,
+    headline: draft.headline ?? "",
+    summary: draft.summary ?? "",
+    city: draft.city ?? "",
+    state: draft.state ?? "",
+    semester: draft.semester ?? "",
+    university: draft.university ?? "",
+    cr: draft.cr ?? "",
+    portfolio: draft.portfolio ?? "",
+    photoUrl: "",
   };
 }
 
@@ -150,7 +176,13 @@ export function StudentProfilePage() {
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState("");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [photoMessage, setPhotoMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [resumeDraft, setResumeDraft] = useState<ResumeProfileDraft | null>(null);
+  const [isImportingResume, setIsImportingResume] = useState(false);
+  const [isConfirmingResume, setIsConfirmingResume] = useState(false);
+  const [isDownloadingResume, setIsDownloadingResume] = useState(false);
+  const [resumeMessage, setResumeMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const avatarPhotoInputRef = useRef<HTMLInputElement | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -251,6 +283,84 @@ export function StudentProfilePage() {
       setError(submitError instanceof Error ? submitError.message : "Não foi possível atualizar o perfil.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleResumeFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file || !token) return;
+
+    if (file.type !== "application/pdf") {
+      setResumeMessage({ type: "error", text: "Selecione um currículo no formato PDF." });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setResumeMessage({ type: "error", text: "O currículo deve ter no máximo 5 MB." });
+      return;
+    }
+
+    setResumeMessage(null);
+    setIsImportingResume(true);
+
+    try {
+      const response = await importStudentResume(file, token);
+      setResumeDraft(response.profileDraft);
+      setInitialValues(getResumeDraftFormValues(response.profileDraft));
+      setResumeMessage({ type: "success", text: "Dados extraídos. Revise os campos e confirme o preenchimento." });
+    } catch (importError) {
+      setResumeMessage({ type: "error", text: importError instanceof Error ? importError.message : "Não foi possível ler o currículo." });
+    } finally {
+      setIsImportingResume(false);
+    }
+  }
+
+  async function handleConfirmResume(data: CreateStudentProfileInput) {
+    if (!token) return;
+
+    setIsConfirmingResume(true);
+    setResumeMessage(null);
+
+    try {
+      const updatedProfile = await confirmStudentResume(data, token);
+      setProfile(updatedProfile);
+      setProfileId(updatedProfile.id);
+      setInitialValues(getProfileFormValues(updatedProfile));
+      setPreviewPhotoUrl(updatedProfile.photoUrl ?? "");
+      setResumeDraft(null);
+      setSuccessMessage("Currículo confirmado e perfil atualizado com sucesso.");
+      if (user) {
+        setUser({ ...user, name: updatedProfile.name, displayName: updatedProfile.name });
+      }
+    } catch (confirmError) {
+      setResumeMessage({ type: "error", text: confirmError instanceof Error ? confirmError.message : "Não foi possível confirmar o currículo." });
+    } finally {
+      setIsConfirmingResume(false);
+    }
+  }
+
+  async function handleDownloadResume() {
+    if (!token) return;
+
+    setIsDownloadingResume(true);
+    setResumeMessage(null);
+
+    try {
+      const blob = await downloadStudentResume(token);
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "meu-curriculo.pdf";
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (downloadError) {
+      setResumeMessage({ type: "error", text: downloadError instanceof Error ? downloadError.message : "Não foi possível baixar o currículo." });
+    } finally {
+      setIsDownloadingResume(false);
     }
   }
 
@@ -402,13 +512,30 @@ export function StudentProfilePage() {
                 <h2>Atualize seus dados profissionais</h2>
               </div>
             </div>
+            <div className="resume-tools">
+              <div>
+                <span className="panel__label">Currículo</span>
+                <h3>Importe ou gere seu currículo</h3>
+                <p>Envie um PDF para preencher os campos automaticamente. Revise os dados antes de confirmar.</p>
+              </div>
+              <div className="resume-tools__actions">
+                <input ref={resumeInputRef} className="profile-form__file-input" type="file" accept="application/pdf,.pdf" onChange={handleResumeFileChange} />
+                <button className="secondary-button" type="button" onClick={() => resumeInputRef.current?.click()} disabled={isImportingResume || isConfirmingResume}>
+                  {isImportingResume ? "Lendo currículo..." : "Importar currículo PDF"}
+                </button>
+                <button className="secondary-button" type="button" onClick={handleDownloadResume} disabled={isDownloadingResume || isConfirmingResume}>
+                  {isDownloadingResume ? "Gerando PDF..." : "Baixar meu currículo"}
+                </button>
+              </div>
+              {resumeMessage ? <p className={resumeMessage.type === "success" ? "form-success" : "form-error"}>{resumeMessage.text}</p> : null}
+            </div>
             {successMessage ? <p className="form-success">{successMessage}</p> : null}
             <StudentProfileForm
               initialValues={initialValues}
-              submitLabel="Salvar alterações"
-              isSubmitting={isSubmitting}
-              error={error}
-              onSubmit={handleSubmit}
+              submitLabel={resumeDraft ? "Confirmar dados do currículo" : "Salvar alterações"}
+              isSubmitting={isSubmitting || isConfirmingResume}
+              error={resumeDraft ? null : error}
+              onSubmit={resumeDraft ? handleConfirmResume : handleSubmit}
               onPhotoChange={setPreviewPhotoUrl}
             />
           </section>
