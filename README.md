@@ -28,6 +28,7 @@ Crie os arquivos .env a partir de .env.example. Nunca publique segredos.
 - Cadastro e autenticacao JWT para estudantes, empresas e coordenacao.
 - Perfis, vagas, candidaturas e acompanhamento de status.
 - Matching deterministico entre perfil e vaga.
+- Importacao de curriculo em PDF com interpretacao opcional por LLM.
 - Notificacoes e exportacao de candidaturas em CSV.
 - Modo demonstrativo no frontend.
 
@@ -53,7 +54,22 @@ docs/           guias e documentacao de arquitetura
 Usuario -> React/Vite -> API Fastify -> Prisma -> PostgreSQL
 ~~~
 
-Storage de objetos e Groq/LLM sao possibilidades futuras.
+Storage de objetos continua planejado para uma etapa futura. A interpretacao de curriculos pode usar Groq quando `GROQ_API_KEY` estiver configurada; sem essa chave, o parser local permanece ativo.
+
+## Demonstracao
+
+O seed demonstrativo cria um estudante, uma empresa, um coordenador e cinco vagas ficticias marcadas como demonstracao em Manaus:
+
+~~~
+npm run db:migrate:deploy
+npm run db:seed:demo
+~~~
+
+As credenciais da demonstracao podem ser configuradas por `DEMO_*` no ambiente. Nunca reutilize a senha demonstrativa em producao.
+
+## Publicacao
+
+As URLs publicas do frontend e da API devem ser registradas aqui depois da configuracao da hospedagem. O container da API executa as migrations pendentes antes de iniciar o servidor.
 
 ## Desenvolvimento e validacao
 

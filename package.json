@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "start": "node dist/src/server.js",
     "build": "tsc",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:seed:demo": "tsx scripts/seed-demo.ts",
     "test": "vitest run --dir src/tests && vitest run --dir apps/web/tests",
     "test:migrations": "node scripts/test-migrations.mjs",
     "typecheck": "tsc --project tsconfig.check.json"
