@@ -1,4 +1,4 @@
-import { apiGet, apiPost, apiPut } from "./api";
+import { apiDownload, apiGet, apiPost, apiPut, apiUpload } from "./api";
 
 export type AvailabilityOption = "MANHA" | "TARDE" | "NOITE";
 
@@ -36,6 +36,11 @@ export type CreateStudentProfileInput = {
   photoUrl?: string;
 };
 
+export type ResumeProfileDraft = Omit<CreateStudentProfileInput, "photoUrl"> & {
+  email?: string;
+  phone?: string;
+};
+
 export const availabilityOptions: Array<{ value: AvailabilityOption; label: string }> = [
   { value: "MANHA", label: "Manhã" },
   { value: "TARDE", label: "Tarde" },
@@ -65,4 +70,19 @@ export function createStudentProfile(data: CreateStudentProfileInput, token: str
 
 export function updateStudentProfile(id: string, data: Partial<CreateStudentProfileInput>, token: string) {
   return apiPut<StudentProfile>(`/students/${id}`, data, token);
+}
+
+export function importStudentResume(file: File, token: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  return apiUpload<{ filename: string; profileDraft: ResumeProfileDraft; requiresConfirmation: boolean }>("/students/resume/import", formData, token);
+}
+
+export function confirmStudentResume(data: CreateStudentProfileInput, token: string) {
+  const { photoUrl: _photoUrl, ...resumeData } = data;
+  return apiPut<StudentProfile>("/students/resume/confirm", resumeData, token);
+}
+
+export function downloadStudentResume(token: string) {
+  return apiDownload("/students/resume.pdf", token);
 }

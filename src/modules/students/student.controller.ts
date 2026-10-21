@@ -1,7 +1,8 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
+import { ConfirmResumeDTO, CreateStudentDTO, UpdateStudentDTO } from "./student.dto";
 import { StudentService } from "./student.service";
 import { extractResumeDraft, RESUME_MAX_FILE_SIZE } from "./resume-import.service";
+import { generateResumePdf } from "./resume-pdf.service";
 import { AppError } from "../../shared/errors/app.error";
 
 const studentService = new StudentService();
@@ -58,5 +59,49 @@ export class StudentController {
       profileDraft: draft,
       requiresConfirmation: true,
     });
+  }
+
+  async confirmResume(request: FastifyRequest, reply: FastifyReply) {
+    const {
+      name,
+      course,
+      skills,
+      availability,
+      headline,
+      summary,
+      city,
+      state,
+      semester,
+      university,
+      cr,
+      portfolio,
+    } = request.body as ConfirmResumeDTO;
+    const data: ConfirmResumeDTO = {
+      name,
+      course,
+      skills,
+      availability,
+      headline,
+      summary,
+      city,
+      state,
+      semester,
+      university,
+      cr,
+      portfolio,
+    };
+    const student = await studentService.confirmResume(request.user.id, data);
+    return reply.send(student);
+  }
+
+  async downloadResume(request: FastifyRequest, reply: FastifyReply) {
+    const student = await studentService.findByUserId(request.user.id);
+    const pdf = await generateResumePdf(student);
+    const filename = `curriculo-${student.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "aluno"}.pdf`;
+
+    return reply
+      .type("application/pdf")
+      .header("Content-Disposition", `attachment; filename="${filename}"`)
+      .send(pdf);
   }
 }
