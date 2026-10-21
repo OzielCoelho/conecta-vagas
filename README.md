@@ -1,465 +1,80 @@
 # Conecta Vagas
 
-Plataforma full stack para aproximar estudantes e empresas por meio da publicação de vagas, candidaturas e análise de compatibilidade entre perfis.
+Plataforma full stack para aproximar estudantes e empresas por meio de vagas, candidaturas e compatibilidade de perfis.
+
+## Execucao rapida
+
+- Frontend: http://localhost:5173
+- API: http://localhost:3333
+- Health check: http://localhost:3333/health
+- Guia completo: [docs/guia-execucao.md](docs/guia-execucao.md)
+
+~~~
+git clone https://github.com/Uninorte-Extensao/conecta-vagas.git
+cd conecta-vagas
+npm install && npx prisma generate && npx prisma migrate deploy
+~~~
+
+Em outro terminal:
+
+~~~
+cd apps/web && npm install && npm run dev
+~~~
+
+Crie os arquivos .env a partir de .env.example. Nunca publique segredos.
 
 ## Funcionalidades
 
-- Cadastro e autenticação com JWT.
-- Perfis com os papéis `STUDENT`, `COMPANY` e `COORDINATOR`.
-- Criação e edição de perfis de estudantes e empresas.
-- Publicação, consulta e gerenciamento de vagas.
-- Candidatura de estudantes às vagas.
-- Cálculo de compatibilidade entre estudante e vaga.
-- Acompanhamento do status das candidaturas.
-- Notificações de vagas, candidaturas e atualizações de perfil.
-- Exportação de candidaturas em CSV para coordenadores.
-- Interface responsiva e modo de demonstração no frontend.
+- Cadastro e autenticacao JWT para estudantes, empresas e coordenacao.
+- Perfis, vagas, candidaturas e acompanhamento de status.
+- Matching deterministico entre perfil e vaga.
+- Notificacoes e exportacao de candidaturas em CSV.
+- Modo demonstrativo no frontend.
 
 ## Tecnologias
 
-### Backend
+React, React Router, TypeScript e Vite no frontend; Node.js, TypeScript, Fastify, Prisma e PostgreSQL no backend; JWT, bcryptjs, CORS, rate limit, Vitest e GitHub Actions na qualidade e seguranca.
 
-- Node.js e TypeScript
-- Fastify
-- Prisma ORM
-- PostgreSQL
-- JWT e bcryptjs
-- Vitest
+## Estrutura
 
-### Frontend
-
-- React 19
-- React Router
-- TypeScript
-- Vite
-
-## Estrutura do projeto
-
-```text
-conecta-vagas/
-├── apps/
-│   └── web/                 # Aplicação React
-│       └── src/
-│           ├── components/
-│           ├── pages/
-│           ├── services/
-│           ├── auth/
-│           └── notifications/
-├── prisma/
-│   ├── migrations/          # Migrations do banco
-│   └── schema.prisma        # Modelos e enums do Prisma
-├── src/
-│   ├── modules/             # Domínios da API
-│   ├── shared/              # Prisma, erros e middlewares
-│   ├── tests/               # Testes automatizados
-│   └── server.ts            # Entrada da API
-├── .env.example
-├── package.json
-└── prisma.config.ts
-```
-
-O backend e o frontend são aplicações separadas no mesmo repositório. O backend
-expõe a API Fastify na porta `3333`; o frontend Vite usa `VITE_API_URL` para
-consumir essa API na porta `5173`.
+~~~
+apps/web/       frontend React
+src/            API Fastify e testes do backend
+prisma/         schema e migrations
+docs/           guias e documentacao de arquitetura
+~~~
 
 ## Arquitetura
 
-O diagrama editável e a versão visual da arquitetura estão em:
+- [Diagrama editavel](docs/arquitetura-conecta-vagas.drawio)
+- [Diagrama visual](docs/arquitetura-conecta-vagas.svg)
 
-- [Diagrama editável](docs/arquitetura-conecta-vagas.drawio)
-- [Diagrama visual em SVG](docs/arquitetura-conecta-vagas.svg)
+~~~
+Usuario -> React/Vite -> API Fastify -> Prisma -> PostgreSQL
+~~~
 
-### Componentes atuais
+Storage de objetos e Groq/LLM sao possibilidades futuras.
 
-- **Frontend:** React, React Router e Vite em `apps/web`.
-- **API:** Fastify com TypeScript em `src`, organizada por módulos de usuários,
-  estudantes, empresas, vagas, candidaturas, notificações e matching.
-- **Autenticação e segurança:** JWT, bcryptjs, CORS configurável, rate limit e
-  validação de requisições.
-- **Persistência:** Prisma ORM conectado ao PostgreSQL, com migrations em
-  `prisma/migrations`.
-- **Execução e entrega:** Docker para o banco local e workflow do GitHub Actions
-  para tipos, builds, testes, migrations e publicação condicionada da API.
+## Desenvolvimento e validacao
 
-### Integrações planejadas
+Na raiz:
 
-Storage de objetos para imagens e integração com Groq/LLM são possibilidades
-futuras. Elas não fazem parte do fluxo atual e não são necessárias para o
-cálculo determinístico de compatibilidade.
-
-### Fluxo principal
-
-```text
-Usuário → React/Vite → API Fastify → Prisma → PostgreSQL
-                              ├── autenticação e autorização
-                              ├── vagas, candidaturas e notificações
-                              └── matching determinístico
-```
-
-## Pré-requisitos
-
-- Node.js 20 ou superior
-- npm
-- PostgreSQL 14 ou superior, instalado localmente ou executado via Docker
-- Docker (opcional, recomendado para o banco local)
-
-## Configuração
-
-### 1. Obtenha o projeto
-
-```bash
-git clone https://github.com/Uninorte-Extensao/conecta-vagas.git
-cd conecta-vagas
-```
-
-### 2. Instale as dependências do backend
-
-```bash
-npm install
-```
-
-### 3. Instale as dependências do frontend
-
-```bash
-cd apps/web
-npm install
-cd ../..
-```
-
-### 4. Configure o PostgreSQL
-
-Com Docker, crie um banco dedicado ao projeto:
-
-```bash
-docker run -d \
-  --name conecta-vagas-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=conectavagas \
-  -p 5432:5432 \
-  postgres:17-alpine
-```
-
-Nas próximas execuções, basta iniciar o container existente:
-
-```bash
-docker start conecta-vagas-postgres
-```
-
-Se preferir uma instalação local do PostgreSQL, crie o banco `conectavagas` e ajuste a `DATABASE_URL` conforme seu usuário, senha, host e porta.
-
-### 5. Configure o backend
-
-Crie `.env` na raiz, usando `.env.example` como referência:
-
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/conectavagas"
-JWT_SECRET="troque_por_uma_chave_longa_e_aleatoria"
-PORT=3333
-```
-
-Variáveis:
-
-| Variável | Obrigatória | Descrição |
-| --- | --- | --- |
-| `DATABASE_URL` | Sim | URL de conexão com o PostgreSQL |
-| `JWT_SECRET` | Sim | Chave usada para assinar tokens JWT |
-| `PORT` | Não | Porta da API; o padrão é `3333` |
-| `JWT_TTL_SECONDS` | Não | Tempo de validade do JWT; o padrão é `3600` segundos |
-| `CORS_ORIGINS` | Não | Origens permitidas, separadas por vírgula |
-| `AUTH_RATE_LIMIT_MAX` | Não | Número máximo de tentativas por janela |
-| `AUTH_RATE_LIMIT_WINDOW_MS` | Não | Duração da janela do rate limit em milissegundos |
-
-Não publique o `.env` ou credenciais reais no repositório.
-
-### 6. Configure o frontend
-
-Crie `apps/web/.env`, usando `apps/web/.env.example` como referência:
-
-```env
-VITE_API_URL=http://localhost:3333
-```
-
-### 7. Gere o Prisma Client e aplique as migrations
-
-```bash
-npx prisma generate
-npx prisma migrate deploy
-```
-
-Para criar uma migration durante o desenvolvimento após modificar o schema:
-
-```bash
-npx prisma migrate dev --name descricao_da_alteracao
-```
-
-## Executando em desenvolvimento
-
-Abra dois terminais.
-
-No primeiro, inicie a API a partir da raiz:
-
-```bash
+~~~
 npm run dev
-```
-
-No segundo, inicie o frontend:
-
-```bash
-cd apps/web
-npm run dev
-```
-
-Acesse:
-
-- Frontend: <http://localhost:5173>
-- API: <http://localhost:3333>
-- Verificação da API: <http://localhost:3333/health>
-
-O endpoint de verificação deve responder:
-
-```json
-{
-  "status": "ok"
-}
-```
-
-## Build e testes
-
-### Backend
-
-```bash
-npm run build
 npm test
-```
+npm run typecheck
+~~~
 
-### Frontend
+No frontend:
 
-```bash
-cd apps/web
-npm run build
-```
-
-O build do frontend é gerado em `apps/web/dist`.
-
-### Validação completa usada pela CI
-
-Com PostgreSQL disponível, os comandos equivalentes aos jobs da CI são:
-
-```bash
-npm ci
-npx prisma generate
+~~~
+npm run dev
 npm run typecheck
 npm run build
-npm test
-npm run test:migrations
-npm ci --prefix apps/web
-npm run typecheck --prefix apps/web
-npm run build --prefix apps/web
-```
+~~~
 
-O workflow `.github/workflows/ci.yml` executa esses grupos em jobs separados.
-O workflow `.github/workflows/docker-publish.yml` só publica a imagem quando as
-validações passam, o evento ocorre na `main` do repositório oficial e os secrets
-do Docker Hub estão configurados no GitHub. Os valores dos secrets não ficam no
-repositório.
+Consulte o [guia de execucao](docs/guia-execucao.md) para PostgreSQL, Docker, variaveis de ambiente, migrations e problemas comuns.
 
-## Scripts disponíveis
+## Equipe
 
-### Raiz
-
-| Comando | Descrição |
-| --- | --- |
-| `npm run dev` | Inicia a API com recarregamento automático |
-| `npm run build` | Compila o backend TypeScript |
-| `npm test` | Executa os testes com Vitest |
-
-### `apps/web`
-
-| Comando | Descrição |
-| --- | --- |
-| `npm run dev` | Inicia o servidor de desenvolvimento Vite |
-| `npm run build` | Verifica os tipos e gera o build do frontend |
-| `npm run preview` | Serve localmente o build de produção |
-
-## Autenticação
-
-As rotas protegidas esperam um token JWT no cabeçalho:
-
-```http
-Authorization: Bearer SEU_TOKEN
-```
-
-Exemplo de login:
-
-```bash
-curl -X POST http://localhost:3333/users/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"aluno@example.com","password":"123456"}'
-```
-
-## Principais rotas da API
-
-### Usuários
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `POST` | `/users/register` | Público | Cadastra estudante ou empresa |
-| `POST` | `/users/login` | Público | Autentica e retorna o token JWT |
-| `GET` | `/users/me` | Autenticado | Retorna o usuário atual |
-| `PATCH` | `/users/me` | Autenticado | Atualiza o e-mail |
-| `PATCH` | `/users/password` | Autenticado | Atualiza a senha |
-
-No cadastro público, `role` aceita `STUDENT` ou `COMPANY`. Contas de coordenador não são criadas pela rota pública.
-
-### Estudantes
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `POST` | `/students` | Estudante | Cria o próprio perfil |
-| `GET` | `/students/me` | Estudante | Obtém o próprio perfil |
-| `GET` | `/students` | Empresa/coordenador | Lista estudantes |
-| `PUT` | `/students/:id` | Estudante/coordenador | Atualiza um perfil |
-
-### Empresas
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `POST` | `/companies` | Empresa | Cria o próprio perfil |
-| `GET` | `/companies/me` | Empresa | Obtém o próprio perfil |
-| `PUT` | `/companies/:id` | Empresa/coordenador | Atualiza um perfil |
-
-### Vagas
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `POST` | `/jobs` | Empresa | Publica uma vaga |
-| `GET` | `/jobs` | Autenticado | Lista vagas |
-| `GET` | `/jobs/mine` | Empresa | Lista vagas da empresa atual |
-| `GET` | `/jobs/:id` | Autenticado | Obtém uma vaga |
-| `PUT` | `/jobs/:id` | Empresa/coordenador | Atualiza uma vaga |
-
-Os modelos de trabalho aceitos são `REMOTE`, `IN_PERSON` e `HYBRID`.
-
-### Candidaturas
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `POST` | `/applications` | Estudante | Candidata-se usando `jobId` |
-| `GET` | `/applications/me` | Estudante | Lista as próprias candidaturas |
-| `GET` | `/applications/job/:jobId` | Empresa/coordenador | Lista candidatos de uma vaga |
-| `PATCH` | `/applications/:id/status` | Empresa/coordenador | Atualiza o status |
-| `GET` | `/applications/export/csv` | Coordenador | Exporta candidaturas em CSV |
-
-Fluxo de status permitido:
-
-```text
-SENT
-├── UNDER_REVIEW
-│   ├── INTERVIEW
-│   │   ├── APPROVED
-│   │   └── REJECTED
-│   └── REJECTED
-└── REJECTED
-```
-
-### Notificações
-
-| Método | Rota | Acesso | Descrição |
-| --- | --- | --- | --- |
-| `GET` | `/notifications` | Autenticado | Lista notificações do usuário |
-| `PATCH` | `/notifications/read-all` | Autenticado | Marca todas como lidas |
-| `PATCH` | `/notifications/:id/read` | Autenticado | Marca uma notificação como lida |
-| `POST` | `/notifications/system` | Coordenador | Cria uma notificação do sistema |
-
-## Modelo de dados
-
-Os principais modelos são:
-
-- `User`: credenciais e papel do usuário.
-- `Student`: dados acadêmicos, habilidades e disponibilidade.
-- `Company`: informações institucionais da empresa.
-- `Job`: vaga associada a uma empresa.
-- `Application`: candidatura de um estudante a uma vaga.
-- `Notification`: notificações direcionadas aos usuários.
-
-Um estudante pode se candidatar apenas uma vez a cada vaga.
-
-## Solução de problemas
-
-### A API não conecta ao banco
-
-Confira se o PostgreSQL está ativo:
-
-```bash
-docker ps
-docker exec conecta-vagas-postgres pg_isready -U postgres -d conectavagas
-```
-
-Verifique também usuário, senha, porta e banco definidos em `DATABASE_URL`.
-
-### Tabelas não encontradas
-
-```bash
-npx prisma migrate deploy
-```
-
-### Prisma Client não encontrado
-
-```bash
-npx prisma generate
-```
-
-### `JWT_SECRET não configurado`
-
-Crie o `.env` na raiz e defina `JWT_SECRET`.
-
-### O frontend não acessa a API
-
-Confirme que a API está em execução e que `VITE_API_URL` aponta para a URL correta. Reinicie o Vite depois de alterar o arquivo `.env`.
-
-### A porta já está em uso
-
-Altere `PORT` no `.env` do backend e atualize `VITE_API_URL` no frontend. Para o PostgreSQL via Docker, mapeie outra porta e atualize a `DATABASE_URL`.
-
-## Recomendações para produção
-
-- Use uma chave JWT longa e armazenada em um gerenciador de segredos.
-- Restrinja o CORS aos domínios autorizados.
-- Execute `npm audit` e avalie as atualizações de dependências.
-- Utilize HTTPS.
-- Configure backups do PostgreSQL.
-- Use armazenamento de objetos para imagens, mantendo apenas as URLs no banco.
-- Revise as permissões de atualização de perfis antes da publicação.
-
-## Licença
-
-Este projeto está configurado com a licença ISC no `package.json`.
-
-### Validação das migrations
-
-Execute `npm run test:migrations` com Docker ativo para validar o banco vazio e a
-atualização de dados sintéticos, incluindo os fluxos HTTP de perfis, candidaturas e
-notificações. O teste cria e remove seu próprio PostgreSQL descartável.
-Veja [a estratégia de conversão, execução e rollback](docs/CVAG-001-migrations.md).
-
-### Integração contínua e publicação
-
-A CI verifica tipos, builds, testes e migrations em PostgreSQL descartável. A imagem
-Docker só é publicada na `main` do repositório principal depois de todas as
-validações passarem. Execuções manuais usam **Actions → Validações do projeto**.
-Veja [os jobs, comandos e o teste de falha controlada](docs/CVAG-007-integracao-continua.md).
-
-### Segurança e sessões
-
-JWTs expiram em 1 hora por padrão; o frontend usa sessionStorage e solicita novo
-login após expiração. Configure CORS_ORIGINS para autorizar o frontend e consulte
-[as variáveis, limites e comportamento da sessão](docs/CVAG-006-seguranca-api.md).
-
-### Documentação relacionada
-
-- [Contribuição e fluxo de branches](CONTRIBUTING.md)
-- [Como executar o projeto](COMO_RODAR.md)
-- [Histórico das migrations](docs/CVAG-001-migrations.md)
-- [Integração contínua](docs/CVAG-007-integracao-continua.md)
-- [Recomendações por compatibilidade](docs/CVAG-008-recomendacoes.md)
+Projeto academico de extensao desenvolvido pela equipe Conecta Vagas.
