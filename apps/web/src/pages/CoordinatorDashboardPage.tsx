@@ -9,6 +9,7 @@ import {
 import { getJobs, type JobItem } from "../services/jobs";
 
 type JobApplications = { job: JobItem; applications: CompanyApplication[] };
+type DashboardApplication = CompanyApplication & { jobId: string; jobTitle: string };
 
 const statusChart: Array<{ key: ApplicationStatus; label: string; tone: string }> = [
   { key: "SENT", label: "Enviado", tone: "blue" },
@@ -24,6 +25,9 @@ export function CoordinatorDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState("all");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | ApplicationStatus>("all");
+  const [selectedPeriod, setSelectedPeriod] = useState<"all" | "30" | "90" | "365">("all");
 
   useEffect(() => {
     if (!token || user?.role !== "COORDINATOR") {
@@ -47,7 +51,28 @@ export function CoordinatorDashboardPage() {
       .finally(() => setIsLoading(false));
   }, [token, user]);
 
-  const allApplications = useMemo(() => data.flatMap((item) => item.applications), [data]);
+  const allApplications = useMemo<DashboardApplication[]>(
+    () => data.flatMap(({ job, applications }) => applications.map((application) => ({
+      ...application,
+      jobId: job.id,
+      jobTitle: job.title,
+    }))),
+    [data],
+  );
+
+  const filteredApplications = useMemo(() => {
+    const cutoff = selectedPeriod === "all"
+      ? null
+      : new Date(Date.now() - Number(selectedPeriod) * 24 * 60 * 60 * 1000);
+
+    return allApplications.filter((application) => {
+      const matchesJob = selectedJobId === "all" || application.jobId === selectedJobId;
+      const matchesStatus = selectedStatus === "all" || application.status === selectedStatus;
+      const createdAt = new Date(application.createdAt);
+      const matchesPeriod = !cutoff || (!Number.isNaN(createdAt.getTime()) && createdAt >= cutoff);
+      return matchesJob && matchesStatus && matchesPeriod;
+    });
+  }, [allApplications, selectedJobId, selectedPeriod, selectedStatus]);
 
   const statusCounts = useMemo(() => {
     const counts: Record<ApplicationStatus, number> = {
@@ -57,26 +82,50 @@ export function CoordinatorDashboardPage() {
       APPROVED: 0,
       REJECTED: 0,
     };
-    allApplications.forEach((application) => {
+    filteredApplications.forEach((application) => {
       counts[application.status] += 1;
     });
     return counts;
-  }, [allApplications]);
+  }, [filteredApplications]);
 
   const maxStatusCount = Math.max(1, ...Object.values(statusCounts));
 
+  const evolutionData = useMemo(() => {
+    const grouped = new Map<string, { label: string; count: number; sortValue: number }>();
+
+    filteredApplications.forEach((application) => {
+      const date = new Date(application.createdAt);
+      if (Number.isNaN(date.getTime())) return;
+
+      const sortValue = date.getFullYear() * 100 + date.getMonth();
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      const current = grouped.get(key);
+
+      grouped.set(key, {
+        label: date.toLocaleDateString("pt-BR", { month: "short", year: "2-digit" }).replace(".", ""),
+        count: (current?.count ?? 0) + 1,
+        sortValue,
+      });
+    });
+
+    return Array.from(grouped.values()).sort((first, second) => first.sortValue - second.sortValue).slice(-8);
+  }, [filteredApplications]);
+
+  const maxEvolutionCount = Math.max(1, ...evolutionData.map((item) => item.count));
+
   const macroStats = useMemo(() => {
-    const companies = new Set(data.map((item) => item.job.company?.id).filter(Boolean));
+    const filteredJobIds = new Set(filteredApplications.map((application) => application.jobId));
+    const companies = new Set(data.filter((item) => filteredJobIds.has(item.job.id)).map((item) => item.job.company?.id).filter(Boolean));
     const approved = statusCounts.APPROVED;
-    const approvalRate = allApplications.length ? Math.round((approved / allApplications.length) * 100) : 0;
+    const approvalRate = filteredApplications.length ? Math.round((approved / filteredApplications.length) * 100) : 0;
 
     return [
-      { label: "Vagas no sistema", value: String(data.length), tone: "blue" as const, icon: "💼" },
-      { label: "Candidaturas totais", value: String(allApplications.length), tone: "violet" as const, icon: "📨" },
+      { label: "Vagas no recorte", value: String(filteredJobIds.size), tone: "blue" as const, icon: "💼" },
+      { label: "Candidaturas no recorte", value: String(filteredApplications.length), tone: "violet" as const, icon: "📨" },
       { label: "Empresas ativas", value: String(companies.size), tone: "emerald" as const, icon: "🏢" },
       { label: "Taxa de aprovação", value: `${approvalRate}%`, tone: "amber" as const, icon: "📈" },
     ];
-  }, [data, allApplications, statusCounts]);
+  }, [data, filteredApplications, statusCounts]);
 
   // Vagas travadas em triagem: têm candidaturas, mas nenhuma avançou para entrevista/aprovação.
   const stuckJobs = useMemo(() => {
@@ -120,6 +169,36 @@ export function CoordinatorDashboardPage() {
 
       {exportError ? <p className="form-error">{exportError}</p> : null}
 
+      <section className="panel dashboard-filters" aria-label="Filtros do dashboard">
+        <div className="dashboard-filters__intro">
+          <span className="panel__label">Filtros</span>
+          <strong>Escolha o recorte da análise</strong>
+        </div>
+        <label className="dashboard-filter">
+          <span>Período</span>
+          <select value={selectedPeriod} onChange={(event) => setSelectedPeriod(event.target.value as typeof selectedPeriod)}>
+            <option value="all">Todo o período</option>
+            <option value="30">Últimos 30 dias</option>
+            <option value="90">Últimos 90 dias</option>
+            <option value="365">Último ano</option>
+          </select>
+        </label>
+        <label className="dashboard-filter">
+          <span>Vaga</span>
+          <select value={selectedJobId} onChange={(event) => setSelectedJobId(event.target.value)}>
+            <option value="all">Todas as vagas</option>
+            {data.map(({ job }) => <option key={job.id} value={job.id}>{job.title}</option>)}
+          </select>
+        </label>
+        <label className="dashboard-filter">
+          <span>Status</span>
+          <select value={selectedStatus} onChange={(event) => setSelectedStatus(event.target.value as typeof selectedStatus)}>
+            <option value="all">Todos os status</option>
+            {statusChart.map((status) => <option key={status.key} value={status.key}>{status.label}</option>)}
+          </select>
+        </label>
+      </section>
+
       <section className="dashboard-stats">
         {macroStats.map((item) => (
           <article key={item.label} className={`dashboard-stat dashboard-stat--${item.tone}`}>
@@ -143,7 +222,7 @@ export function CoordinatorDashboardPage() {
 
           {isLoading ? (
             <p className="dashboard-empty">Carregando dados...</p>
-          ) : allApplications.length ? (
+          ) : filteredApplications.length ? (
             <div className="chart-bars">
               {statusChart.map((status) => {
                 const count = statusCounts[status.key];
@@ -160,7 +239,7 @@ export function CoordinatorDashboardPage() {
               })}
             </div>
           ) : (
-            <p className="dashboard-empty">Sem candidaturas registradas ainda.</p>
+            <p className="dashboard-empty">Nenhuma candidatura encontrada com esses filtros.</p>
           )}
         </article>
 
@@ -192,6 +271,37 @@ export function CoordinatorDashboardPage() {
             <p className="dashboard-empty">Nenhuma vaga travada. Tudo fluindo! 🎉</p>
           )}
         </article>
+      </section>
+
+      <section className="panel dashboard-card dashboard-card--evolution">
+        <div className="dashboard-card__header">
+          <div>
+            <span className="panel__label">Evolução das candidaturas</span>
+            <h2>Quantas candidaturas chegaram em cada período?</h2>
+          </div>
+          <span className="dashboard-card__helper">Últimos 8 períodos com movimentação</span>
+        </div>
+
+        {isLoading ? (
+          <p className="dashboard-empty">Carregando evolução...</p>
+        ) : evolutionData.length ? (
+          <div className="evolution-chart" aria-label="Candidaturas recebidas por período">
+            {evolutionData.map((item) => (
+              <div key={`${item.label}-${item.sortValue}`} className="evolution-chart__column">
+                <span className="evolution-chart__value">{item.count}</span>
+                <div className="evolution-chart__track">
+                  <div
+                    className="evolution-chart__bar"
+                    style={{ height: `${Math.max(10, Math.round((item.count / maxEvolutionCount) * 100))}%` }}
+                  />
+                </div>
+                <span className="evolution-chart__label">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="dashboard-empty">Ainda não há candidaturas para mostrar a evolução.</p>
+        )}
       </section>
     </section>
   );
