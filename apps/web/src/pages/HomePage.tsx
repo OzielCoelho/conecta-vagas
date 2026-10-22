@@ -129,6 +129,12 @@ export function HomePage() {
           </div>
         </div>
 
+        <nav className="public-home-header__nav" aria-label="Navegação da página inicial">
+          <a href="#solucao">A solução</a>
+          <a href="#publicos">Para quem é</a>
+          <a href="#como-funciona">Como funciona</a>
+        </nav>
+
         <div className="public-home-header__actions">
           <button className="secondary-button" type="button" onClick={handleSecondaryAction}>
             {isAuthenticated ? "Ir para o dashboard" : "Entrar"}
@@ -187,7 +193,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="panel public-home-carousel-section public-home-carousel-section--feature">
+      <section id="solucao" className="panel public-home-carousel-section public-home-carousel-section--feature">
         <div className="public-home-carousel-section__intro public-home-carousel-section__intro--compact">
           <div>
             <span className="panel__label">Sistema Conecta Vagas</span>
@@ -206,7 +212,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="public-home-audience-grid">
+      <section id="publicos" className="public-home-audience-grid" aria-label="Públicos da plataforma">
         {audienceCards.map((item) => (
           <article key={item.label} className="panel public-home-audience-card">
             <div className="public-home-audience-card__image">
@@ -261,7 +267,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="panel public-home-journey-section">
+      <section id="como-funciona" className="panel public-home-journey-section">
         <div className="public-home-journey-section__intro">
           <span className="panel__label">Como funciona</span>
           <h2>Três passos para começar.</h2>
@@ -278,7 +284,7 @@ export function HomePage() {
         </div>
       </section>
 
-      <section className="panel public-home-cta-section">
+      <section id="contato" className="panel public-home-cta-section">
         <div className="public-home-cta-section__content">
           <div>
             <span className="panel__label">Pronto para entrar?</span>
@@ -298,6 +304,14 @@ export function HomePage() {
           <img src={supportImage} alt="Ilustração de conexões profissionais" loading="lazy" />
         </div>
       </section>
+
+      <footer className="public-home-footer">
+        <div>
+          <strong>ConectaVagas</strong>
+          <span>O próximo passo da conexão entre talentos e oportunidades.</span>
+        </div>
+        <span>Projeto de extensão • Uninorte</span>
+      </footer>
 
       {authMode === "login" ? (
         <AuthModal
