@@ -2260,6 +2260,46 @@
   gap: 0.7rem;
 }
 
+.public-home-header__nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.15rem;
+  margin-left: auto;
+  margin-right: 1rem;
+}
+
+.public-home-header__nav a {
+  color: #536173;
+  font-size: 0.86rem;
+  font-weight: 650;
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.public-home-header__nav a:hover {
+  color: #168696;
+  transform: translateY(-1px);
+}
+
+.public-home-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.25rem 0.25rem;
+  color: #718096;
+  font-size: 0.8rem;
+}
+
+.public-home-footer > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.public-home-footer strong {
+  color: #243651;
+  font-size: 0.9rem;
+}
+
 .public-home-hero {
   min-height: 390px;
   overflow: hidden;
@@ -4726,6 +4766,7 @@
 
   .public-home-header,
   .public-home-header__actions,
+  .public-home-header__nav,
   .public-home-audience-card {
     grid-template-columns: 1fr;
     flex-direction: column;
@@ -4763,6 +4804,19 @@
 
   .public-home-carousel {
     mask-image: none;
+  }
+
+  .public-home-header__nav {
+    width: 100%;
+    order: 3;
+    justify-content: space-between;
+    margin: 0.2rem 0 0;
+    gap: 0.7rem;
+  }
+
+  .public-home-footer {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
