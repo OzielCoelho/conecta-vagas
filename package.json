@@ -9,6 +9,7 @@
     "build": "tsc",
     "db:migrate:deploy": "prisma migrate deploy",
     "db:seed:demo": "tsx scripts/seed-demo.ts",
+    "db:seed:dashboard": "tsx scripts/seed-dashboard-demo.ts",
     "test": "vitest run --dir src/tests && vitest run --dir apps/web/tests",
     "test:migrations": "node scripts/test-migrations.mjs",
     "typecheck": "tsc --project tsconfig.check.json"
